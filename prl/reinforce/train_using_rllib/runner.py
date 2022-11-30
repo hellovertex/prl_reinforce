@@ -1,6 +1,6 @@
 import os
 
-from prl.baselines.agents.policies import AlwaysMinRaise
+from prl.baselines.agents.core.policy_base import AlwaysMinRaise
 from ray.rllib.algorithms.simple_q import SimpleQ
 from ray.rllib.policy.policy import PolicySpec
 
