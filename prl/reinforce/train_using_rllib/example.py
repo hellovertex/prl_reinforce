@@ -21,7 +21,8 @@ if __name__ == '__main__':
                           1: TRAINABLE_AGENT},
                'n_players': 2,
                'starting_stack_size': 1000,
-               'num_envs': 2
+               'num_envs': 2,
+               'mask_legal_moves': True
                }
     env_cls = make_multi_agent_env(env_cfg)
     # dummy_ctx = EnvContext(env_config={},

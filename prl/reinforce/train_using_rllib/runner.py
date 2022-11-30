@@ -1,13 +1,15 @@
 import os
 
-from prl.baselines.agents.core.policy_base import AlwaysMinRaise
+from prl.baselines.agents.policies import StakeLevelImitationPolicy
 from ray.rllib.algorithms.simple_q import SimpleQ
+from ray.rllib.models import MODEL_DEFAULTS
 from ray.rllib.policy.policy import PolicySpec
 
+from prl.reinforce.agents.our_models import TrainableModelType
 from prl.reinforce.train_using_rllib.our_callbacks import OurRllibCallbacks
-
+from prl.environment.multi_agent.utils import make_multi_agent_env
 RAINBOW_POLICY = "SimpleQ"
-BASELINE_POLICY = "AlwaysMinRaise"
+BASELINE_POLICY = "StakeImitation"
 DistributedRainbow = SimpleQ
 
 
@@ -24,7 +26,7 @@ def run_rainbow_vs_baseline_example(env_cls):
     """Run heuristic policies vs a learned agent.
     under construction.
     """
-
+    observation_space = env_cls(None).observation_space['obs']
     config = {
         "env": env_cls,
         "gamma": 0.9,
@@ -45,11 +47,15 @@ def run_rainbow_vs_baseline_example(env_cls):
             "policies": {
                 RAINBOW_POLICY: PolicySpec(
                     config={
-                        "model": {"use_lstm": False},
+                        "model": {**MODEL_DEFAULTS,
+                                  "custom_model": TrainableModelType.CUSTOM_TORCH_MLP.name,
+                                  "custom_model_config": {}},
                         "framework": "torch",
+                        "observation_space": observation_space
                     }
                 ),
-                BASELINE_POLICY: PolicySpec(policy_class=AlwaysMinRaise),
+                BASELINE_POLICY: PolicySpec(policy_class=StakeLevelImitationPolicy,
+                                            config={'path_to_torch_model_state_dict': 'ckpt.pt'}),
             },
             "policy_mapping_fn": policy_selector,
         },
