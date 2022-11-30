@@ -42,6 +42,7 @@ def run_rainbow_vs_baseline_example(env_cls):
         "callbacks": OurRllibCallbacks,
         "replay_buffer_config": {**SimpleQ.get_default_config()["replay_buffer_config"],
                                  "capacity": 1000},
+        '_disable_preprocessor_api': True,
         "multiagent": {
             "policies_to_train": [RAINBOW_POLICY],
             "policies": {

@@ -480,7 +480,7 @@ COMMON_CONFIG: TrainerConfigDict = {
     # If True, no (observation) preprocessor will be created and
     # observations will arrive in model as they are returned by the env.
     # In the future, the default for this will be True.
-    "_disable_preprocessor_api": False,
+    "_disable_preprocessor_api": True,
     # Experimental flag.
     # If True, RLlib will no longer flatten the policy-computed actions into
     # a single tensor (for storage in SampleCollectors/output files/etc..),
