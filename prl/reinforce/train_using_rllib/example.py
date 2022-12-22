@@ -21,6 +21,7 @@ if __name__ == '__main__':
                           1: TRAINABLE_AGENT},
                'n_players': 2,
                'starting_stack_size': 1000,
+               'blinds': [25, 50],
                'num_envs': 2,
                'mask_legal_moves': True
                }
