@@ -1,5 +1,6 @@
 import os
 
+import gin
 from prl.baselines.agents.policies import StakeLevelImitationPolicy
 from ray.rllib.algorithms.simple_q import SimpleQ
 from ray.rllib.models import MODEL_DEFAULTS
@@ -8,6 +9,7 @@ from ray.rllib.policy.policy import PolicySpec
 from prl.reinforce.agents.our_models import TrainableModelType
 from prl.reinforce.train_using_rllib.our_callbacks import OurRllibCallbacks
 from prl.environment.multi_agent.utils import make_multi_agent_env
+
 RAINBOW_POLICY = "SimpleQ"
 BASELINE_POLICY = "StakeImitation"
 DistributedRainbow = SimpleQ
@@ -22,7 +24,9 @@ def policy_selector(agent_id, episode, **kwargs):
         return BASELINE_POLICY
 
 
-def run_rainbow_vs_baseline_example(env_cls):
+@gin.configurable
+def run_rainbow_vs_baseline_example(env_cls,
+                                    prl_baseline_model_ckpt_path):
     """Run heuristic policies vs a learned agent.
     under construction.
     """
@@ -56,7 +60,7 @@ def run_rainbow_vs_baseline_example(env_cls):
                     }
                 ),
                 BASELINE_POLICY: PolicySpec(policy_class=StakeLevelImitationPolicy,
-                                            config={'path_to_torch_model_state_dict': 'ckpt.pt'}),
+                                            config={'path_to_torch_model_state_dict': prl_baseline_model_ckpt_path}),
             },
             "policy_mapping_fn": policy_selector,
         },

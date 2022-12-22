@@ -16,6 +16,10 @@ TRAINABLE_AGENT = "Trainable"
 #              },
 #              )
 if __name__ == '__main__':
+    import gin
+
+    gin.parse_config_file('../config.gin')
+
     env_cfg = {'env_wrapper_cls': AugmentObservationWrapper,
                'agents': {0: BASELINE_AGENT,
                           1: TRAINABLE_AGENT},

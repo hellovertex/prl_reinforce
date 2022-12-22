@@ -1,0 +1,1 @@
+run_rainbow_vs_baseline_example.prl_baseline_model_ckpt_path = "/home/sascha/Documents/github.com/prl_reinforce/data/baseline_model_ckpt.pt"
