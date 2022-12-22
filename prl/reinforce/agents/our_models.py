@@ -2,10 +2,8 @@ import enum
 
 import torch.nn as nn
 from ray.rllib.models import ModelCatalog
-from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
-from prl.baselines.supervised_learning.models.nn_model import MLP
-from prl.environment.multi_agent.utils import make_multi_agent_env
+from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 
 
 class TrainableModelType(enum.IntEnum):
@@ -25,6 +23,8 @@ class CustomTorchModel(TorchModelV2, nn.Module):
                                                     name + '_internal')
 
     def forward(self, input_dict, state, seq_lens):
+        # todo: legal_moves mask here (already on logit level before returning)
+        # see https://github.com/ray-project/ray/blob/master/rllib/examples/models/action_mask_model.py
         if isinstance(input_dict, dict):
             return self.internal_model(input_dict['obs'])
         # rllib preprocessor api has already flattened observation dictionary
