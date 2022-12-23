@@ -1,17 +1,3 @@
-from prl.environment.Wrappers.augment import AugmentObservationWrapper
-import os
-from typing import Type
-
-import gin
-from prl.baselines.agents.policies import StakeLevelImitationPolicy
-from ray.rllib import MultiAgentEnv
-from ray.rllib.algorithms.simple_q import SimpleQ
-from ray.rllib.models import MODEL_DEFAULTS
-from ray.rllib.policy.policy import PolicySpec
-
-from prl.reinforce.agents.our_models import TrainableModelType
-from prl.reinforce.train_using_rllib.our_callbacks import OurRllibCallbacks
-from prl.environment.multi_agent.utils import make_multi_agent_env
 import os
 from typing import Type
 
@@ -20,20 +6,20 @@ from prl.baselines.agents.policies import StakeLevelImitationPolicy
 from prl.environment.Wrappers.augment import AugmentObservationWrapper
 from prl.environment.multi_agent.utils import make_multi_agent_env
 from ray.rllib import MultiAgentEnv
+from ray.rllib.algorithms.apex_dqn import ApexDQN
 from ray.rllib.algorithms.simple_q import SimpleQ
 from ray.rllib.models import MODEL_DEFAULTS
 from ray.rllib.policy.policy import PolicySpec
 
 from prl.reinforce.agents.our_models import TrainableModelType
-from prl.reinforce.train_using_rllib.our_callbacks import OurRllibCallbacks
+from prl.reinforce.agents.rainbow import make_rainbow_config
+from prl.reinforce.train_using_rllib.prl_callbacks.our_callbacks import OurRllibCallbacks
 
 RAINBOW_POLICY = "SimpleQ"
 BASELINE_POLICY = "StakeImitation"
-DistributedRainbow = SimpleQ
+
 from prl.reinforce.train_using_rllib.runner import TrainRunner
 
-BASELINE_AGENT = "Baseline"
-TRAINABLE_AGENT = "Trainable"
 
 
 # ray.tune.run(ApexTrainer,
@@ -57,7 +43,8 @@ def policy_selector(agent_id, episode, **kwargs):
 
 
 @gin.configurable
-def run(prl_baseline_model_ckpt_path="",
+def run(algo_class=ApexDQN,
+        prl_baseline_model_ckpt_path="",
         min_sample_timesteps_per_iteration=10,
         num_steps_sampled_before_learning_starts=10,
         max_episodes=100,
@@ -65,8 +52,8 @@ def run(prl_baseline_model_ckpt_path="",
         ckpt_interval=10,
         algo_ckpt_dir="./algo_ckpt"):
     env_config = {'env_wrapper_cls': AugmentObservationWrapper,
-                  'agents': {0: BASELINE_AGENT,
-                             1: TRAINABLE_AGENT},
+                  'agents': {0: "Baseline",
+                             1: "Trainable"},
                   'n_players': 2,
                   'starting_stack_size': 1000,
                   'blinds': [25, 50],
@@ -75,7 +62,6 @@ def run(prl_baseline_model_ckpt_path="",
                   }
     env_cls: Type[MultiAgentEnv] = make_multi_agent_env(env_config)
     observation_space = env_cls(None).observation_space['obs']
-    algo_class = DistributedRainbow
     algo_config = {
         "env": env_cls,
         "gamma": 0.9,
@@ -91,7 +77,7 @@ def run(prl_baseline_model_ckpt_path="",
         "num_steps_sampled_before_learning_starts": num_steps_sampled_before_learning_starts,
         "horizon": max_iter_per_episode,
         "callbacks": OurRllibCallbacks,
-        "replay_buffer_config": {**SimpleQ.get_default_config()["replay_buffer_config"],
+        "replay_buffer_config": {**algo_class.get_default_config()["replay_buffer_config"],
                                  "capacity": 100},
         '_disable_preprocessor_api': True,
         "multiagent": {
@@ -113,9 +99,7 @@ def run(prl_baseline_model_ckpt_path="",
         },
         "framework": "torch",
     }
-    # todo uncomment this, when we are ready to use real Rainbow
-    # config = make_rainbow_config(config)
-    # rainbow_agent = get_distributed_rainbow(config)
+    algo_config = make_rainbow_config(algo_config)  # APEXDQN is now distributed Rainbow
 
     results = TrainRunner().run(algo_class,
                                 algo_config,

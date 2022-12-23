@@ -12,4 +12,9 @@ def make_rainbow_config(config: AlgorithmConfigDict):
 
 
 def get_distributed_rainbow(rainbow_config_dict):
+    assert "n_step" in rainbow_config_dict
+    assert "noisy" in rainbow_config_dict
+    assert "num_atoms" in rainbow_config_dict
+    assert "v_min" in rainbow_config_dict
+    assert "v_max" in rainbow_config_dict
     return ApexDQN(rainbow_config_dict)
