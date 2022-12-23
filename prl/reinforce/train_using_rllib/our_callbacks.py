@@ -42,6 +42,7 @@ class OurRllibCallbacks(DefaultCallbacks):
             kwargs: Forward compatibility placeholder.
         """
         print(f'FROM WITHIN EPISODE END CB')
+
         print(f"EPISODE = {episode}")
 
     def on_episode_step(
