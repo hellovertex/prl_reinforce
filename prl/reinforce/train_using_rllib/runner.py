@@ -7,6 +7,7 @@ from ray.rllib.models import MODEL_DEFAULTS
 from ray.rllib.policy.policy import PolicySpec
 
 from prl.reinforce.agents.our_models import TrainableModelType
+from prl.reinforce.agents.rainbow import make_rainbow_config, get_distributed_rainbow
 from prl.reinforce.train_using_rllib.our_callbacks import OurRllibCallbacks
 from prl.environment.multi_agent.utils import make_multi_agent_env
 
@@ -26,7 +27,12 @@ def policy_selector(agent_id, episode, **kwargs):
 
 @gin.configurable
 def run_rainbow_vs_baseline_example(env_cls,
-                                    prl_baseline_model_ckpt_path):
+                                    prl_baseline_model_ckpt_path,
+                                    algo_ckpt_dir,
+                                    max_episodes: int,
+                                    max_iter_per_episode: int,
+                                    ckpt_interval: int
+                                    ):
     """Run heuristic policies vs a learned agent.
     under construction.
     """
@@ -67,12 +73,23 @@ def run_rainbow_vs_baseline_example(env_cls,
         "framework": "torch",
     }
     # todo uncomment this, when we are ready to use real Rainbow
-    # config = make_rainbow_config(config)
-    # rainbow_agent = get_distributed_rainbow(config)
-    algo = DistributedRainbow(config=config)
+    #config = make_rainbow_config(config)
+    #rainbow_agent = get_distributed_rainbow(config)
 
+    algo = DistributedRainbow(config=config)
+    # maybe load from checkpoint
+    try:
+        algo.from_checkpoint(algo_ckpt_dir)
+    except ValueError as e:
+        # if checkpoint does not exist, we start from scratch
+        print('No Rllib Algorithm Checkpoint exists at given directory, '
+              'we start training from scratch. Original Error Message was ', e)
+
+
+    # how many steps
     for _ in range(3):
         results = algo.train()
+        algo.save_checkpoint(algo_ckpt_dir)
         # Timesteps reached.
         if "policy_always_same_reward" not in results["hist_stats"]:
             reward_diff = 0
