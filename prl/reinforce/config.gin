@@ -1,6 +1,0 @@
-
-run_rainbow_vs_baseline_example.prl_baseline_model_ckpt_path = "/home/sascha/Documents/github.com/prl_reinforce/data/baseline_model_ckpt.pt"
-run_rainbow_vs_baseline_example.algo_ckpt_dir = "./rllib_ckpts/"
-run_rainbow_vs_baseline_example.max_episodes = 100000000  # 100 million
-run_rainbow_vs_baseline_example.max_iter_per_episode = 10  # 1000  steps
-run_rainbow_vs_baseline_example.ckpt_interval = 100  # 100 save all episodes

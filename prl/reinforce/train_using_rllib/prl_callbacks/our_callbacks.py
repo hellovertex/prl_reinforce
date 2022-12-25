@@ -41,9 +41,7 @@ class OurRllibCallbacks(DefaultCallbacks):
                 (within the vector of sub-environments of the BaseEnv).
             kwargs: Forward compatibility placeholder.
         """
-        print(f'FROM WITHIN EPISODE END CB')
-
-        print(f"EPISODE = {episode}")
+        pass
 
     def on_episode_step(
             self,
@@ -73,6 +71,4 @@ class OurRllibCallbacks(DefaultCallbacks):
                 (within the vector of sub-environments of the BaseEnv).
             kwargs: Forward compatibility placeholder.
         """
-        print(f'FROM WITHIN EPISODE STEP CB')
-        print(f"EPISODE = {episode}")
-        # pass
+        pass

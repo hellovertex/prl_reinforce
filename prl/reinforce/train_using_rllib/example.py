@@ -7,7 +7,6 @@ from prl.environment.Wrappers.augment import AugmentObservationWrapper
 from prl.environment.multi_agent.utils import make_multi_agent_env
 from ray.rllib import MultiAgentEnv
 from ray.rllib.algorithms.apex_dqn import ApexDQN
-from ray.rllib.algorithms.simple_q import SimpleQ
 from ray.rllib.models import MODEL_DEFAULTS
 from ray.rllib.policy.policy import PolicySpec
 
@@ -15,11 +14,10 @@ from prl.reinforce.agents.our_models import TrainableModelType
 from prl.reinforce.agents.rainbow import make_rainbow_config
 from prl.reinforce.train_using_rllib.prl_callbacks.our_callbacks import OurRllibCallbacks
 
-RAINBOW_POLICY = "SimpleQ"
+RAINBOW_POLICY = "ApexDQN"
 BASELINE_POLICY = "StakeImitation"
 
 from prl.reinforce.train_using_rllib.runner import TrainRunner
-
 
 
 # ray.tune.run(ApexTrainer,
@@ -47,6 +45,7 @@ def run(algo_class=ApexDQN,
         prl_baseline_model_ckpt_path="",
         min_sample_timesteps_per_iteration=10,
         num_steps_sampled_before_learning_starts=10,
+        replay_buffer_capacity=5000,
         max_episodes=100,
         max_iter_per_episode=10,
         ckpt_interval=10,
@@ -67,18 +66,21 @@ def run(algo_class=ApexDQN,
         "gamma": 0.9,
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-        "num_workers": 0,
-        "num_envs_per_worker": 4,
-        "rollout_fragment_length": 10,
-        "train_batch_size": 10,
-        "metrics_num_episodes_for_smoothing": 20,
-        "log_level": "DEBUG",
+        "num_workers": 8,
+        # "num_cpus_per_worker": 8,
+        "max_episodes": max_episodes,
+        "num_envs_per_worker": 1,
+        "rollout_fragment_length": 50,
+        "evaluation_interval": 1,
+        # "train_batch_size": 50,
+        # "metrics_num_episodes_for_smoothing": 20,
+        "log_level": "WARN",
         "min_sample_timesteps_per_iteration": min_sample_timesteps_per_iteration,
         "num_steps_sampled_before_learning_starts": num_steps_sampled_before_learning_starts,
         "horizon": max_iter_per_episode,
         "callbacks": OurRllibCallbacks,
         "replay_buffer_config": {**algo_class.get_default_config()["replay_buffer_config"],
-                                 "capacity": 100},
+                                 "capacity": replay_buffer_capacity},
         '_disable_preprocessor_api': True,
         "multiagent": {
             "policies_to_train": [RAINBOW_POLICY],
@@ -86,7 +88,7 @@ def run(algo_class=ApexDQN,
                 RAINBOW_POLICY: PolicySpec(
                     config={
                         "model": {**MODEL_DEFAULTS,
-                                  "custom_model": TrainableModelType.CUSTOM_TORCH_MLP.name,
+                                  "custom_model": 0,  # todo how to set custom NN ?
                                   "custom_model_config": {}},
                         "framework": "torch",
                         "observation_space": observation_space

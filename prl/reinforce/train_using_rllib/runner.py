@@ -34,11 +34,7 @@ class TrainRunner:
                   'we start training from scratch. Original Error Message was ', e)
 
         # how many steps
-        for i in range(3):
+        for i in range(algorithm_config['max_episodes']):
             results = algo.train()
             if (i + 1) % ckpt_interval:
                 algo.save_checkpoint(algo_ckpt_dir)
-            # Timesteps reached.
-            if "policy_always_same_reward" not in results["hist_stats"]:
-                reward_diff = 0
-                continue
