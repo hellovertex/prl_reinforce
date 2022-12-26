@@ -8,7 +8,7 @@ from ray.rllib.policy.policy import Policy
 from ray.rllib.utils.typing import PolicyID
 
 
-class OurRllibCallbacks(DefaultCallbacks):
+class PRLToRllibCallbacks(DefaultCallbacks):
     def on_episode_end(
             self,
             *,

@@ -1,4 +1,5 @@
 import gin
+from ray.rllib.algorithms import AlgorithmConfig
 from ray.rllib.algorithms.simple_q import SimpleQ
 from ray.rllib.utils.typing import AlgorithmConfigDict
 
@@ -20,11 +21,13 @@ class TrainRunner:
 
     def run(self,
             algorithm_class,  # our custom dict, NOT rllib EnvContext dictionary
-            algorithm_config: AlgorithmConfigDict,
+            # algorithm_config: AlgorithmConfigDict,
+            algorithm_config: AlgorithmConfig,
             algo_ckpt_dir,
             ckpt_interval
             ):
-        algo = algorithm_class(algorithm_config)
+        # algorithm_class(algorithm_config)
+        algo = algorithm_config.build()
         # maybe load from checkpoint
         try:
             algo.from_checkpoint(algo_ckpt_dir)
@@ -34,7 +37,7 @@ class TrainRunner:
                   'we start training from scratch. Original Error Message was ', e)
 
         # how many steps
-        for i in range(algorithm_config['max_episodes']):
+        for i in range(10000000000000):
             results = algo.train()
             if (i + 1) % ckpt_interval:
                 algo.save_checkpoint(algo_ckpt_dir)
