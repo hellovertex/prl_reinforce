@@ -37,7 +37,7 @@ class TrainRunner:
                   'we start training from scratch. Original Error Message was ', e)
 
         # how many steps
-        for i in range(10000000000000):
+        for i in range(100000000):
             results = algo.train()
             if (i + 1) % ckpt_interval:
                 algo.save_checkpoint(algo_ckpt_dir)
