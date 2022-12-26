@@ -27,7 +27,7 @@ class CustomTorchModel(TorchModelV2, nn.Module):
         # todo: legal_moves mask here (already on logit level before returning)
         # see https://github.com/ray-project/ray/blob/master/rllib/examples/models/action_mask_model.py
         if isinstance(input_dict, dict) or isinstance(input_dict, SampleBatch):
-            return self.internal_model(input_dict['obs_flat'])
+            return self.internal_model(input_dict['obs'])
         # rllib preprocessor api has already flattened observation dictionary
         # --> first three bits after flattening correspond to legal moves mask
         raise NotImplementedError

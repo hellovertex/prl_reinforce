@@ -9,5 +9,5 @@ numpy==1.22.0
 pandas
 pydantic
 tianshou
-ray[rllib]
+ray[rllib]==2.1.0
 gin-config
