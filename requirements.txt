@@ -10,4 +10,5 @@ pandas
 pydantic
 tianshou
 ray[rllib]==2.1.0
+protobuf<=3.20.1
 gin-config

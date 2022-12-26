@@ -70,30 +70,33 @@ def run(algo_class=ApexDQN,
                                             config={'path_to_torch_model_state_dict': prl_baseline_model_ckpt_path}),
             }
     # observation_space = env_cls(None).observation_space['obs']
-    # conf = ApexDQNConfig()
+    replay_buffer_config = {**algo_class.get_default_config()["replay_buffer_config"],
+                                               "capacity": replay_buffer_capacity}
     conf = ApexDQNConfig()
     conf = conf.environment(env=env_cls)
     conf = conf.training(gamma=0.9,
-                         replay_buffer_config={**algo_class.get_default_config()["replay_buffer_config"],
-                                               "capacity": replay_buffer_capacity},
-
+                         replay_buffer_config=algo_class.get_default_config(),  # replay_buffer_config,
                          )
-    conf = conf.resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
-    conf = conf.rollouts(num_rollout_workers=3,
-                         num_envs_per_worker=1,
-                         rollout_fragment_length=50,
+    conf = conf.resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")),)
+    conf = conf.rollouts(num_rollout_workers=os.cpu_count(),
+                         # # use num_envs_per_woker > 1 with remote_worker_envs
+                         # # to spawn envs in new processes. causes significant
+                         # # overhead but may be worth if stepping the env is slow
+                         # num_envs_per_worker=4,
+                         # remote_worker_envs=True,
+                         # rollout_fragment_length=50,
                          horizon=max_iter_per_episode,
                          )
-    conf = conf.evaluation(evaluation_interval=1)
+    conf = conf.evaluation(evaluation_interval=10)
     conf = conf.debugging(log_level="DEBUG")
-    conf = conf.reporting(min_sample_timesteps_per_iteration=min_sample_timesteps_per_iteration,
-                          )
+    # conf = conf.reporting(min_sample_timesteps_per_iteration=min_sample_timesteps_per_iteration,
+    #                       )
     conf = conf.callbacks(PRLToRllibCallbacks)
     conf = conf.multi_agent(policies=policies,
                             policy_mapping_fn=policy_selector,
                             policies_to_train=[RAINBOW_POLICY])
     conf = conf.framework(framework="torch")
-    conf = conf.experimental(_disable_preprocessor_api=True)
+    conf = conf.experimental(_disable_preprocessor_api=True)  # important! this prevents flattening obs_dict
 
     algo_config = make_rainbow_config(conf)  # APEXDQN is now distributed Rainbow
     # algo_config = conf
