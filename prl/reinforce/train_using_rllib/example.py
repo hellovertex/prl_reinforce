@@ -36,8 +36,7 @@ from prl.reinforce.train_using_rllib.runner import TrainRunner
 def policy_selector(agent_id, episode, **kwargs):
     # if "player" not in agent_id:
     #     raise ValueError("WRONG AGENT ID")
-    # if agent_id in [0, 2, 3, 5]:
-    if agent_id == 0:
+    if agent_id in [0, 2, 3, 5]:
         return BASELINE_POLICY
     else:
         return RAINBOW_POLICY
@@ -56,31 +55,17 @@ def run(algo_class=ApexDQN,
     env_config = {'env_wrapper_cls': AugmentObservationWrapper,
                   'agents': {0: BASELINE_POLICY,
                              1: RAINBOW_POLICY,
-                             # 2: BASELINE_POLICY,
-                             # 3: BASELINE_POLICY,
-                             # 4: RAINBOW_POLICY,
-                             # 5: BASELINE_POLICY
+                             2: BASELINE_POLICY,
+                             3: BASELINE_POLICY,
+                             4: RAINBOW_POLICY,
+                             5: BASELINE_POLICY
                              },
-                  'n_players': 2,
+                  'n_players': 6,
                   'starting_stack_size': 1000,
                   'blinds': [25, 50],
-                  # 'num_envs': 2,
                   'mask_legal_moves': True}
     env_cls: Type[MultiAgentEnv] = make_multi_agent_env(env_config)
-    policies = {RAINBOW_POLICY: PolicySpec(  # no policy_class specified --> will fall back to return algo_class
-                    # config={
-                    #     "model": {**MODEL_DEFAULTS,
-                    #               "fcnet_hiddens": [512, 512],
-                    #               "_disable_preprocessor_api": True,
-                    #               # "_disable_preprocessor_api": True,
-                    #               # "_disable_action_flattening": True,
-                    #               "custom_model": CustomTorchModel,  # todo how to set custom NN ?
-                    #               "custom_model_config": {}
-                    #               },
-                    #     "framework": "torch",
-                    #     # "observation_space": observation_space
-                    # }
-                ),
+    policies = {RAINBOW_POLICY: PolicySpec(),  # empty defaults to agent_class policy --> RAINBOW
                 BASELINE_POLICY: PolicySpec(policy_class=StakeLevelImitationPolicy,
                                             config={'path_to_torch_model_state_dict': prl_baseline_model_ckpt_path}),
             }
