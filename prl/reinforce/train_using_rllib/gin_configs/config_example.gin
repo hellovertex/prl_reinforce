@@ -1,5 +1,5 @@
-run.prl_baseline_model_ckpt_path = "/home/sascha/Documents/github.com/prl_reinforce/data/baseline_model_ckpt.pt"
-run.algo_ckpt_dir = "/home/sascha/Documents/github.com/prl_reinforce/data/rllib_ckpts/"
+run.prl_baseline_model_ckpt_path = r"C:\Users\hellovertex\Documents\github.com\dev.azure.com\prl\prl_reinforce\data\baseline_model_ckpt.pt"
+run.algo_ckpt_dir = r"C:\Users\hellovertex\Documents\github.com\dev.azure.com\prl\prl_reinforce\data\rllib_ckpts/"
 run.max_episodes = 100000000  # 100 million
 run.max_iter_per_episode = 1000  # 1000  steps
 run.ckpt_interval = 10  # 100 save all episodes
