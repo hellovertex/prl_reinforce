@@ -36,7 +36,8 @@ from prl.reinforce.train_using_rllib.runner import TrainRunner
 def policy_selector(agent_id, episode, **kwargs):
     # if "player" not in agent_id:
     #     raise ValueError("WRONG AGENT ID")
-    if agent_id in [0, 2, 3, 5]:
+    # if agent_id in [0, 2, 3, 5]:
+    if agent_id == 0:
         return BASELINE_POLICY
     else:
         return RAINBOW_POLICY
@@ -55,12 +56,12 @@ def run(algo_class=ApexDQN,
     env_config = {'env_wrapper_cls': AugmentObservationWrapper,
                   'agents': {0: BASELINE_POLICY,
                              1: RAINBOW_POLICY,
-                             2: BASELINE_POLICY,
-                             3: BASELINE_POLICY,
-                             4: RAINBOW_POLICY,
-                             5: BASELINE_POLICY
+                             # 2: BASELINE_POLICY,
+                             # 3: BASELINE_POLICY,
+                             # 4: RAINBOW_POLICY,
+                             # 5: BASELINE_POLICY
                              },
-                  'n_players': 6,
+                  'n_players': 2,
                   'starting_stack_size': 1000,
                   'blinds': [25, 50],
                   'mask_legal_moves': True}
@@ -97,7 +98,8 @@ def run(algo_class=ApexDQN,
                             policies_to_train=[RAINBOW_POLICY])
     conf = conf.framework(framework="torch")
     conf = conf.experimental(_disable_preprocessor_api=True)  # important! this prevents flattening obs_dict
-
+    # apexdqn
+    conf.replay_buffer_config = replay_buffer_config
     algo_config = make_rainbow_config(conf)  # APEXDQN is now distributed Rainbow
     # algo_config = conf
 
