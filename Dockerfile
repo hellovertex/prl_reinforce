@@ -33,8 +33,7 @@ RUN cd /ml/prl_environment && pip install .
 # Install Poker Baseline Agents
 RUN cd /ml/prl_baselines && pip install .
 # ... with c++ hand evaluator library
-RUN cd /ml/prl_baselines/prl/baselines/cpp_hand_evaluator/cpp
-RUN cmake . && make
+RUN cd /ml/prl_baselines/prl/baselines/cpp_hand_evaluator/cpp && cmake . && make
 
 # Install Poker Reinforcement Learning package
 RUN cd /ml/prl_reinforce && pip install .
