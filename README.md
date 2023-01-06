@@ -17,12 +17,15 @@ are installed (see their `README`s -- clone them and install via `pip install .`
 ## Usage
 
 ----
+### Set environment variables
+- export `PRL_BASELINE_MODEL_PATH`=<PATH_TO_"baseline_model_ckpt.pt"_FILE>
+- export `ALGO_CKPT_DIR`=<PATH_TO_RLLIB_CHECKPOINT_DIR>
 
 To execute an example distributed training run using ray and an rllib vectorized-PokerEnv
-you want to 
-- run `python prl.reinforce.train_using_rllib.example.py`
+you want to run
+- `python prl.reinforce.train_using_rllib.example.py`
 
-Before doing that, please set output path inside `prl/reinforce/config.gin`.
+Before doing that, double-check the gin-configuration at `prl/reinforce/train_using_rllib/gin_configs`.
 
 
 ## Development

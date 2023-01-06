@@ -33,10 +33,14 @@ RUN cd /ml/prl_environment && pip install .
 # Install Poker Baseline Agents
 RUN cd /ml/prl_baselines && pip install .
 # ... with c++ hand evaluator library
-RUN cd /ml//prl/baselines/cpp_hand_evaluator/cpp
+RUN cd /ml/prl_baselines/prl/baselines/cpp_hand_evaluator/cpp
 RUN cmake . && make
 
 # Install Poker Reinforcement Learning package
 RUN cd /ml/prl_reinforce && pip install .
 
-CMD python /ml/prl_reinforce/prl/reinforce/train_using_rllib/example.py
+RUN export ALGO_CKPT_DIR=/ml/prl_reinforce/data/rllib_ckpts
+RUN export PRL_BASELINE_MODEL_PATH=/ml/prl_reinforce/data/baseline_model_ckpt.pt
+
+ENTRYPOINT /ml/prl_reinforce/prl/reinforce/train_using_rllib/example.py
+# CMD python /ml/prl_reinforce/prl/reinforce/train_using_rllib/example.py

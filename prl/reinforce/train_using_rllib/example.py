@@ -45,14 +45,12 @@ def policy_selector(agent_id, episode, **kwargs):
 
 @gin.configurable
 def run(algo_class=ApexDQN,
-        prl_baseline_model_ckpt_path="",
         min_sample_timesteps_per_iteration=100,
         num_steps_sampled_before_learning_starts=1000,
         max_episodes=100,
         replay_buffer_capacity=5000,
         max_iter_per_episode=10,
-        ckpt_interval=10,
-        algo_ckpt_dir="./algo_ckpt"):
+        ckpt_interval=10):
     env_config = {'env_wrapper_cls': AugmentObservationWrapper,
                   'agents': {0: BASELINE_POLICY,
                              1: RAINBOW_POLICY,
@@ -68,7 +66,7 @@ def run(algo_class=ApexDQN,
     env_cls: Type[MultiAgentEnv] = make_multi_agent_env(env_config)
     policies = {RAINBOW_POLICY: PolicySpec(),  # empty defaults to agent_class policy --> RAINBOW
                 BASELINE_POLICY: PolicySpec(policy_class=StakeLevelImitationPolicy,
-                                            config={'path_to_torch_model_state_dict': prl_baseline_model_ckpt_path}),
+                                            config={'path_to_torch_model_state_dict': os.environ['PRL_BASELINE_MODEL_PATH']}),
             }
     # observation_space = env_cls(None).observation_space['obs']
     replay_buffer_config = {**algo_class.get_default_config()["replay_buffer_config"],
@@ -105,7 +103,7 @@ def run(algo_class=ApexDQN,
 
     results = TrainRunner().run(algo_class,
                                 algo_config,
-                                algo_ckpt_dir,
+                                os.environ['ALGO_CKPT_DIR'],
                                 ckpt_interval)
 
 
