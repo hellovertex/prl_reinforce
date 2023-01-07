@@ -11,3 +11,5 @@ pydantic
 tianshou
 ray[rllib]==2.1.0
 gin-config
+psutil
+gputil
