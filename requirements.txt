@@ -4,7 +4,6 @@ prefetch_generator
 seaborn
 click
 gdown
-sklearn
 numpy==1.22.0
 pandas
 pydantic

@@ -87,7 +87,7 @@ def run(algo_class=ApexDQN,
                          horizon=max_iter_per_episode,
                          )
     conf = conf.evaluation(evaluation_interval=10)
-    conf = conf.debugging(log_level="DEBUG")
+    conf = conf.debugging(log_level="INFO",log_sys_usage=True)
     # conf = conf.reporting(min_sample_timesteps_per_iteration=min_sample_timesteps_per_iteration,
     #                       )
     conf = conf.callbacks(PRLToRllibCallbacks)
