@@ -8,6 +8,7 @@ from prl.environment.Wrappers.augment import AugmentObservationWrapper
 from prl.environment.multi_agent.utils import make_multi_agent_env
 from ray.rllib import MultiAgentEnv
 from ray.rllib.algorithms.apex_dqn import ApexDQN, ApexDQNConfig
+from ray.rllib.algorithms.callbacks import MultiCallbacks, MemoryTrackingCallbacks
 from ray.rllib.algorithms.simple_q import SimpleQ, SimpleQConfig
 from ray.rllib.models import MODEL_DEFAULTS
 from ray.rllib.policy.policy import PolicySpec
@@ -89,9 +90,13 @@ def run(algo_class=ApexDQN,
                          horizon=max_iter_per_episode,
                          )
     conf = conf.evaluation(evaluation_interval=10)
-    conf = conf.debugging(log_level="DEBUG")
+    conf = conf.debugging(log_level="DEBUG", log_sys_usage=True)
     # conf = conf.reporting(min_sample_timesteps_per_iteration=min_sample_timesteps_per_iteration,
     #                       )
+    # conf = conf.callbacks(MultiCallbacks([
+    #     PRLToRllibCallbacks,
+    #     MemoryTrackingCallbacks
+    # ]))
     conf = conf.callbacks(PRLToRllibCallbacks)
     conf = conf.multi_agent(policies=policies,
                             policy_mapping_fn=policy_selector,
