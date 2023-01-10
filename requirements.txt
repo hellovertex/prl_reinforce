@@ -4,10 +4,11 @@ prefetch_generator
 seaborn
 click
 gdown
-sklearn
 numpy==1.22.0
 pandas
 pydantic
 tianshou
 ray[rllib]==2.1.0
 gin-config
+psutil
+gputil
