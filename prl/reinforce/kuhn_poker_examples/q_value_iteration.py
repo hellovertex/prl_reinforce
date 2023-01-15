@@ -75,10 +75,10 @@ check_fold = A.check_fold
 bet_call = A.bet_call
 
 # Define MDP - Transition function
-N_NON_TERMINAL_STATES = S.N_STATES_S
+N_STATES = S.N_STATES_S
 N_ACTIONS = A.N_ACTIONS
-N_TERMINAL_STATES = S_.N_STATES_S_
-T = np.zeros((N_NON_TERMINAL_STATES, N_ACTIONS, N_TERMINAL_STATES))
+N_SUCCESSOR_STATES = S_.N_STATES_S_
+T = np.zeros((N_STATES, N_ACTIONS, N_SUCCESSOR_STATES))
 
 # Assume villain has the following strategy: villain...
 # 1) Always bets when facing a check, unless he has J (Villain only checks when holding J)
@@ -107,22 +107,39 @@ T[S.KP_][check_fold][S_.KPCQ] = 1  # Checks and then folds after villain bets --
 T[S.KP_][bet_call][S_.KPCQ] = 1  # Checks and then calls after villain bets his Q -- Hero wins 2
 
 # Define MDP - Reward Function
-R = np.zeros((N_NON_TERMINAL_STATES, N_ACTIONS, N_TERMINAL_STATES))
+R = np.zeros((N_STATES, N_ACTIONS, N_SUCCESSOR_STATES))
+R[J][check_fold][S_.JP_] = 0  # S_.JP_ is reached with probability 1 because villain always bets Q, K
+R[J][bet_call][S_.JPCQ] = -2  # Hero checks and then calls villain raise
+R[J][bet_call][S_.JPCK] = -2  # Hero checks and then calls villain raise
+R[S.JP_][check_fold][S_.JPx2] = -1  # Hero checks and then folds and loses 1 by default
+R[S.JP_][bet_call][S_.JPCQ] = -2  # Hero checks and then calls and loses 2
+R[S.JP_][bet_call][S_.JPCQ] = -2  # Hero checks and then calls and loses 2
+
+R[Q][check_fold][S_.QP_] = 0  # Hero has to act
+R[Q][check_fold][S_.QPWJ] = 1  # Hero wins by default
+R[Q][bet_call][S_.QBWF] = 1  # Villain folds his J
+R[Q][bet_call][S_.QBSK] = -2  # Villain raises his K
+R[S.QP_][check_fold][S_.QPx2] = -1  # Hero loses ante=1 after check/fold
+R[S.QP_][bet_call][S_.QPCK] = -2  # Hero passes then calls bet of villain with King
+
+R[K][check_fold][S_.KPWJ] = 1  # Villain holds J and checks -- Hero wins by default
+R[K][check_fold][S_.KP_] = 0  # Villain holds Q and bets -- Hero has to move
+R[K][bet_call][S_.KBWF] = 1  # Villain holds J and folds after Hero Bet -- Hero wins
+R[K][bet_call][S_.KBSQ] = 2  # Hero bets his Q and gets called to showdown by Q -- Hero wins
+R[S.KP_][check_fold][S_.KPCQ] = -1  # Checks and then folds after villain bets -- Hero loses 1 by default
+R[S.KP_][bet_call][S_.KPCQ] = 2  # Checks and then calls after villain bets his Q -- Hero wins 2
 
 
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
-    nA = R.shape[0]
-    nS = T.shape[0]
-    Q = np.zeros((nS, nA))  # initially
+    Q = np.zeros((N_STATES, N_ACTIONS))
     for _ in range(n_iters):
-        for s in range(nS):  # for all states s
-            for a in range(nA):  # for all actions a
+        for s in range(N_STATES):  # for all states s
+            for a in range(N_ACTIONS):  # for all actions a
                 sum_sp = 0
-                for s_ in range(nS):  # for all reachable states s'
+                for s_ in range(N_SUCCESSOR_STATES):  # for all reachable states s'
                     sum_sp += (T[s][a][s_] * (R[s][a][s_] + gamma * max(Q[s_])))
                 Q[s][a] = sum_sp
     return Q
 
 
 if __name__ == "__main__":
-    Q = np.zeros((S.N_STATES_S, S_.N_STATES_S_))
