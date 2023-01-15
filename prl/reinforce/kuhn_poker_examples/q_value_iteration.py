@@ -2,6 +2,7 @@ import numpy as np
 from enum import IntEnum
 
 
+# Define MDP - State Space I
 class S(IntEnum):
     # Non-Terminal States where player one has to act
     J: 0  # either JQ or JK -- Hero only sees his Jack
@@ -15,6 +16,7 @@ class S(IntEnum):
     N_STATES_S: 6
 
 
+# Define MDP - State Space II
 class S_(IntEnum):
     # Terminal states where hero held Jack
     JPLQ: 0  # Jack | Passed | Lost vs. Passing Queen
@@ -55,6 +57,7 @@ class S_(IntEnum):
     N_STATES_S_: 27
 
 
+# Define MDP - Action Space
 class A(IntEnum):
     # go left in game tree
     check_fold = 0  # actually "Pass" but pass is reserved python keyword, so call it "check_fold" here
@@ -63,15 +66,26 @@ class A(IntEnum):
     N_ACTIONS = 2
 
 
-# Initialize transition function
+# utils
+J = S.J
+Q = S.J
+K = S.K
+check_fold = A.check_fold
+bet_call = A.bet_call
+
+# Define MDP - Transition function
 N_NON_TERMINAL_STATES = S.N_STATES_S
 N_ACTIONS = A.N_ACTIONS
 N_TERMINAL_STATES = S_.N_STATES_S_
-
 T = np.zeros((N_NON_TERMINAL_STATES, N_ACTIONS, N_TERMINAL_STATES))
-T[S.J][A.check_fold][S_.JPLQ] = 1/2
-T[S.J][A.check_fold][S_.JPLK] = 0  # Villain never passes when having King
-T[S.J][A.check_fold][S.JP_] = 1/2
+
+
+# Assume villain has the following strategy: villain...
+# 1) Always bets when facing a check, unless he has J (Villain only checks when holding J)
+# 2) Always calls when facing a bet, unless he has J (Villain only folds when holding J).
+
+
+# Define MDP - Reward Function
 
 
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
