@@ -16,6 +16,11 @@ class S(IntEnum):
     N_STATES_S: 6
 
 
+J = S.J
+Q = S.J
+K = S.K
+
+
 # Define MDP - State Space II
 class S_(IntEnum):
     # Terminal states where hero held Jack
@@ -66,10 +71,6 @@ class A(IntEnum):
     N_ACTIONS = 2
 
 
-# utils
-J = S.J
-Q = S.J
-K = S.K
 check_fold = A.check_fold
 bet_call = A.bet_call
 
@@ -79,13 +80,34 @@ N_ACTIONS = A.N_ACTIONS
 N_TERMINAL_STATES = S_.N_STATES_S_
 T = np.zeros((N_NON_TERMINAL_STATES, N_ACTIONS, N_TERMINAL_STATES))
 
-
 # Assume villain has the following strategy: villain...
 # 1) Always bets when facing a check, unless he has J (Villain only checks when holding J)
 # 2) Always calls when facing a bet, unless he has J (Villain only folds when holding J).
 
+# Rollouts where Hero holds Jack
+T[J][check_fold][S_.JP_] = 1  # villain will always bet when holding Q or K
+T[J][bet_call][S_.JBSQ] = .5  # Hero bets his J and gets called to showdown by Q -- Hero loses
+T[J][bet_call][S_.JBSK] = .5  # Hero bets his J and gets called to showdown by K -- Hero loses
+T[S.JP_][check_fold][S_.JPx2] = 1  # Checks and then folds after villain bets his Q or K -- loses 1
+T[S.JP_][bet_call][S_.JPCQ] = .5  # Checks and then calls villain betting his Q -- Hero loses 2
+T[S.JP_][bet_call][S_.JPCK] = .5  # Checks and then calls villain betting his K -- Hero loses 2
+# Rollouts where hero holds Q
+T[Q][check_fold][S_.QPWJ] = .5  # Villain holds J and checks -- Hero wins by default
+T[Q][check_fold][S_.QP_] = .5  # Villain holds K and bets -- Hero has to move
+T[Q][bet_call][S_.QBWF] = .5  # Villain holds J and folds after Hero Bet -- Hero wins
+T[Q][bet_call][S_.QBSK] = .5  # Hero bets his Q and gets called to showdown by K -- Hero loses
+T[S.QP_][check_fold][S_.QPx2] = 1  # Checks and then folds after villain bets -- Hero loses 1
+T[S.QP_][bet_call][S_.QPCK] = 1  # Checks and then calls villain betting his K -- Hero loses 2
+# Rollouts where hero holds K
+T[K][check_fold][S_.KPWJ] = .5  # Villain holds J and checks -- Hero wins by default
+T[K][check_fold][S_.KP_] = .5  # Villain holds Q and bets -- Hero has to move
+T[K][bet_call][S_.KBWF] = .5  # Villain holds J and folds after Hero Bet -- Hero wins
+T[K][bet_call][S_.KBSQ] = .5  # Hero bets his Q and gets called to showdown by Q -- Hero wins
+T[S.KP_][check_fold][S_.KPCQ] = 1  # Checks and then folds after villain bets -- Hero loses 1 by default
+T[S.KP_][bet_call][S_.KPCQ] = 1  # Checks and then calls after villain bets his Q -- Hero wins 2
 
 # Define MDP - Reward Function
+R = np.zeros((N_NON_TERMINAL_STATES, N_ACTIONS, N_TERMINAL_STATES))
 
 
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
