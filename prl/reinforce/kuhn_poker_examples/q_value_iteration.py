@@ -163,11 +163,17 @@ df = pd.DataFrame()  # fill with Q values
 
 # todo make surface plot using https://plotly.com/python/3d-surface-plots/
 #  and debug below function
+def export_q_values(Q: np.ndarray, path='./exported_q_values.csv'):
+    df = pd.DataFrame(Q.T, columns=state_names)
+    df.to_csv(path)
+    return df
+
 
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
     Q = np.zeros((N_STATES, N_ACTIONS))
-    for _ in range(n_iters):
-        print(Q)
+    for i in range(n_iters):
+        # df = export_q_values(Q, path=f'./exported_q_values_{i}.csv')
+        # print(df.head())
         for s in range(N_STATES):  # for all states s
             for a in range(N_ACTIONS):  # for all actions a
                 sum_sp = 0
@@ -177,12 +183,9 @@ def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
                     t = T[s][a][s_]
                     sum_sp += (t * (r + gamma * max_q))
                 Q[s][a] = sum_sp
-    df = pd.DataFrame(Q.T, columns=state_names)
-    print(df.head())
-
     return Q
 
 
 if __name__ == "__main__":
-    Q = Qvalue_iteration(T, R, 1, n_iters=10)
+    Q = Qvalue_iteration(T, R, 1, n_iters=3)
     print(Q)
