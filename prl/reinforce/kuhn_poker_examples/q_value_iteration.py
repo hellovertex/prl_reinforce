@@ -117,6 +117,15 @@ R[K][bet_call][S.KBSQ] = 2  # Hero bets his Q and gets called to showdown by Q -
 R[S.KP_][check_fold][S.KPCQ] = -1  # Checks and then folds after villain bets -- Hero loses 1 by default
 R[S.KP_][bet_call][S.KPCQ] = 2  # Checks and then calls after villain bets his Q -- Hero wins 2
 
+import plotly.graph_objects as go
+import pandas as pd
+
+state_names = list(S.__members__.keys())
+df = pd.DataFrame()  # fill with Q values
+
+
+# todo make surface plot using https://plotly.com/python/3d-surface-plots/
+#  and debug below function
 
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
     Q = np.zeros((N_STATES, N_ACTIONS))
