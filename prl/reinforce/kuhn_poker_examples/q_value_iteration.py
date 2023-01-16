@@ -1,55 +1,52 @@
 import numpy as np
-from enum import IntEnum
+from enum import IntEnum, auto
 
 
-# Define MDP - State Space 
+# Define MDP - State Space
 class S(IntEnum):
     # Non-Terminal States where player one has to act
-    J = 0  # either JQ or JK -- Hero only sees his Jack
-    Q = 1  # either QJ or QK -- Hero only sees his Queen
-    K = 2  # either KJ or KQ -- Hero only sees his King
-    JP_ = 3  # Jack  | Passed and villain Bet -- Hero has to act (Fold or Call)
-    QP_ = 4  # Queen | Passed and villain Bet -- Hero has to act (Fold or Call)
-    KP_ = 5  # King  | Passed and villain Bet -- Hero has to act (Fold or Call)
+    J____ = 0
+    Q____ = 1
+    K____ = 2
+    J_P1_check_P2_bet_P1_PENDING = 3
+    Q_P1_check_P2_bet_P1_PENDING = 4
+    K_P1_check_P2_bet_P1_PENDING = 5
 
     # Terminal states where hero held Jack
-    JPLQ = 6  # Jack | Passed | Lost vs. Passing Queen
-    JPLK = 7  # Jack | Passed | Lost vs. Passing King
-    JPx2 = 8  # Jack | Passed twice | Lost by default
-    JPCQ = 9  # Jack | Passed and Called vs. betting Queen -- Lost
-    JPCK = 10  # Jack | Passed and Called vs. betting King -- Lost
-    JBWF = 11  # Jack | Bet | Won because villain folded
-    JBSQ = 12  # Jack | Bet | Showdown vs. Calling Queen -- Lost
-    JBSK = 13  # Jack | Bet | Showdown vs. Calling King -- Lost
+    J_P1_check_P2_check_show_Q = 6
+    J_P1_check_P2_check_show_K = 7
+    J_P1_check_P2_bet_P1_fold = 8
+    J_P1_check_P2_bet_P1_call_P2_show_Q = 9
+    J_P1_check_P2_bet_P1_call_P2_show_K = 10
+    J_P1_bet_P2_fold = 11
+    J_P1_bet_P2_call_show_Q = 12
+    J_P1_bet_P2_call_show_K = 13
 
     # Terminal states where hero held Queen
-    QPWJ = 14  # Queen | Passed | Won vs. Passing Jack
-    QPLK = 15  # Queen | Passed | Lost vs. Passing King
-    QPx2 = 16  # Queen | Passed twice | Lost by default
-    QPCJ = 17  # Queen | Passed and Called vs. betting Jack -- Won
-    QPCK = 18  # Queen | Passed and Called vs. betting King -- Lost
-    QBWF = 19  # Queen | Bet | Won because villain folded
-    QBSJ = 20  # Queen | Bet | Showdown vs. Calling Jack -- Won
-    QBSK = 21  # Queen | Bet | Showdown vs. Calling King -- Lost
+    Q_P1_check_P2_check_show_J = 14
+    Q_P1_check_P2_check_show_K = 15
+    Q_P1_check_P2_bet_P1_fold = 16
+    Q_P1_check_P2_bet_P1_call_P2_show_J = 17
+    Q_P1_check_P2_bet_P1_call_P2_show_K = 18
+    Q_P1_bet_P2_fold = 19
+    Q_P1_bet_P2_call_show_J = 20
+    Q_P1_bet_P2_call_show_K = 21
 
     # Terminal states where hero held King
-    KPWJ = 22  # King | Passed | Won vs. Passing Jack
-    KPWQ = 23  # King | Passed | Won vs. Passing Queen
-    KPx2 = 24  # King | Passed twice | Lost by default
-    KPCJ = 25  # King | Passed and Called vs. betting Jack -- Won
-    KPCQ = 26  # King | Passed and Called vs. betting Queen -- Won
-    KBWF = 27  # King | Bet | Won because villain folded
-    KBSJ = 28  # King | Bet | Showdown vs. Calling Jack -- Won
-    KBSQ = 29  # King | Bet | Showdown vs. Calling Queen -- Won
-
-    # Total number of terminal states
-    N_STATESS = 30
+    K_P1_check_P2_check_show_J = 22
+    K_P1_check_P2_check_show_Q = 23
+    K_P1_check_P2_bet_P1_fold = 24
+    K_P1_check_P2_bet_P1_call_P2_show_J = 25
+    K_P1_check_P2_bet_P1_call_P2_show_Q = 26
+    K_P1_bet_P2_fold = 27
+    K_P1_bet_P2_call_show_J = 29
+    K_P1_bet_P2_call_show_Q = 30
 
 
-J = S.J
-Q = S.J
-K = S.K
-
+J = S.J____
+Q = S.J____
+K = S.K____
+state_names = list(S.__members__.keys())
 
 # Define MDP - Action Space
 class A(IntEnum):
@@ -64,7 +61,7 @@ check_fold = A.check_fold
 bet_call = A.bet_call
 
 # Define MDP - Transition function
-N_STATES = S.N_STATESS
+N_STATES = len(state_names)
 N_ACTIONS = A.N_ACTIONS
 T = np.zeros((N_STATES, N_ACTIONS, N_STATES))
 
@@ -73,19 +70,28 @@ T = np.zeros((N_STATES, N_ACTIONS, N_STATES))
 # 2) Always calls when facing a bet, unless he has J (Villain only folds when holding J).
 
 # Rollouts where Hero holds Jack
-T[J][check_fold][S.JP_] = 1  # villain will always bet when holding Q or K
-T[J][bet_call][S.JBSQ] = .5  # Hero bets his J and gets called to showdown by Q -- Hero loses
-T[J][bet_call][S.JBSK] = .5  # Hero bets his J and gets called to showdown by K -- Hero loses
-T[S.JP_][check_fold][S.JPx2] = 1  # Checks and then folds after villain bets his Q or K -- loses 1
-T[S.JP_][bet_call][S.JPCQ] = .5  # Checks and then calls villain betting his Q -- Hero loses 2
-T[S.JP_][bet_call][S.JPCK] = .5  # Checks and then calls villain betting his K -- Hero loses 2
+# villain will always bet when holding Q or K
+T[J][check_fold][S.J_P1_check_P2_bet_P1_PENDING] = 1
+# Hero bets his J and gets called to showdown by Q -- Hero loses
+T[J][bet_call][S.J_P1_bet_P2_call_show_Q] = .5
+# Hero bets his J and gets called to showdown by K -- Hero loses
+T[J][bet_call][S.J_P1_bet_P2_call_show_K] = .5
+# Checks and then folds after villain bets his Q or K -- loses 1
+T[S.J_P1_check_P2_bet_P1_PENDING][check_fold][S.J_P1_check_P2_bet_P1_fold] = 1
+# Checks and then calls villain betting his Q -- Hero loses 2
+T[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_Q] = .5
+# Checks and then calls villain betting his K -- Hero loses 2
+T[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_K] = .5
+
 # Rollouts where hero holds Q
-T[Q][check_fold][S.QPWJ] = .5  # Villain holds J and checks -- Hero wins by default
-T[Q][check_fold][S.QP_] = .5  # Villain holds K and bets -- Hero has to move
-T[Q][bet_call][S.QBWF] = .5  # Villain holds J and folds after Hero Bet -- Hero wins
+# Villain holds K and bets -- Hero has to move
+T[Q][check_fold][S.Q_P1_check_P2_bet_P1_PENDING] = .5
+# Villain holds J and checks -- Hero wins by default
+T[Q][check_fold][S.Q_P1_check_P2_check_show_J] = .5
+T[Q][bet_call][S.] = .5  # Villain holds J and folds after Hero Bet -- Hero wins
 T[Q][bet_call][S.QBSK] = .5  # Hero bets his Q and gets called to showdown by K -- Hero loses
-T[S.QP_][check_fold][S.QPx2] = 1  # Checks and then folds after villain bets -- Hero loses 1
-T[S.QP_][bet_call][S.QPCK] = 1  # Checks and then calls villain betting his K -- Hero loses 2
+T[S.Q_P1_check_P2_bet_P1_PENDING][check_fold][S.QPx2] = 1  # Checks and then folds after villain bets -- Hero loses 1
+T[S.Q_P1_check_P2_bet_P1_PENDING][bet_call][S.QPCK] = 1  # Checks and then calls villain betting his K -- Hero loses 2
 # Rollouts where hero holds K
 T[K][check_fold][S.KPWJ] = .5  # Villain holds J and checks -- Hero wins by default
 T[K][check_fold][S.KP_] = .5  # Villain holds Q and bets -- Hero has to move
@@ -97,8 +103,8 @@ T[S.KP_][bet_call][S.KPCQ] = 1  # Checks and then calls after villain bets his Q
 # Define MDP - Reward Function
 R = np.zeros((N_STATES, N_ACTIONS, N_STATES))
 R[J][check_fold][S.JP_] = 0  # S.JP_ is reached with probability 1 because villain always bets Q, K
-R[J][bet_call][S.JPCQ] = -2  # Hero checks and then calls villain raise
-R[J][bet_call][S.JPCK] = -2  # Hero checks and then calls villain raise
+R[J][bet_call][S.JBSQ] = -2  # Hero bets and then gets a call from villain with Q -- loses 2
+R[J][bet_call][S.JBSK] = -2  # Hero bets and then gets a call from villain with K -- loses 2
 R[S.JP_][check_fold][S.JPx2] = -1  # Hero checks and then folds and loses 1 by default
 R[S.JP_][bet_call][S.JPCQ] = -2  # Hero checks and then calls and loses 2
 R[S.JP_][bet_call][S.JPCQ] = -2  # Hero checks and then calls and loses 2
@@ -119,8 +125,9 @@ R[S.KP_][bet_call][S.KPCQ] = 2  # Checks and then calls after villain bets his Q
 
 import plotly.graph_objects as go
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
-state_names = list(S.__members__.keys())
 df = pd.DataFrame()  # fill with Q values
 
 
@@ -136,10 +143,14 @@ def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
                 for S in range(N_STATES):  # for all reachable states s'
                     sum_sp += (T[s][a][S] * (R[s][a][S] + gamma * max(Q[S])))
                 Q[s][a] = sum_sp
+        # dataframe after every iteration
+        df = pd.DataFrame(Q.T, columns=state_names[:-1])
+        print(df.head())
+
     return Q
 
 
 if __name__ == "__main__":
-    Q = Qvalue_iteration(T, R, 1, n_iters=1000)
+    Q = Qvalue_iteration(T, R, 1, n_iters=10)
     print(Q[0][0])
     print(Q[0][1])
