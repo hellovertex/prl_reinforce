@@ -169,6 +169,39 @@ def export_q_values(Q: np.ndarray, path='./exported_q_values.csv'):
     return df
 
 
+def plot_q_values(Q: np.ndarray):
+    import seaborn as sns
+    import matplotlib.pylab as plt
+    plt.style.use("seaborn")
+    states = ['J_Action_1',
+              'Q_Action_1',
+              'K_Action_1',
+              'J_Action_2',
+              'Q_Action_2',
+              'K_Action_2',
+              ]
+    # plt.figure(figsize=(6,2))
+    df = pd.DataFrame(Q[:6,].T)  #, columns=state_names[:6])
+    ax = sns.heatmap(df,
+                     linewidth=1,
+                     annot=True,
+                     # xticklabels=True,
+                     # yticklabels=True
+                     yticklabels=['Check or Fold', 'Bet or Call'],
+                     xticklabels=states
+                     )
+    # ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+    # plt.xticks(rotation=10)
+    # ax.tick_params(axis='x', which='major', pad=0)
+    # b, t = plt.ylim()  # discover the values for bottom and top
+    # b += 0.5  # Add 0.5 to the bottom
+    # t -= 0.5  # Subtract 0.5 from the top
+    # plt.ylim(b, t)  # update the ylim(bottom, top) values
+    plt.title("Kuhn-Poker: Q-Values of states where Player One has to act", fontweight='bold', pad=20)
+    plt.show()
+
+
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
     Q = np.zeros((N_STATES, N_ACTIONS))
     for i in range(n_iters):
@@ -183,6 +216,7 @@ def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
                     t = T[s][a][s_]
                     sum_sp += (t * (r + gamma * max_q))
                 Q[s][a] = sum_sp
+    plot_q_values(Q)
     return Q
 
 
