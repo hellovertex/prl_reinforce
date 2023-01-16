@@ -1,4 +1,5 @@
 from enum import IntEnum
+from typing import Type
 
 import numpy as np
 
@@ -45,7 +46,7 @@ class S(IntEnum):
 
 
 J = S.J____
-Q = S.J____
+Q = S.Q____
 K = S.K____
 state_names = list(S.__members__.keys())
 
@@ -113,45 +114,46 @@ T[S.K_P1_check_P2_bet_P1_PENDING][check_fold][S.K_P1_check_P2_bet_P1_fold] = 1
 # Checks and then calls after villain bets his Q -- Hero wins 2
 T[S.K_P1_check_P2_bet_P1_PENDING][bet_call][S.K_P1_check_P2_bet_P1_call_P2_show_Q] = 1
 
+cards = ['J', 'Q', 'K']
+
+
 # Define MDP - Reward Function
-R = np.zeros((N_STATES, N_ACTIONS, N_STATES))
-R[J][check_fold][S.J_P1_check_P2_bet_P1_PENDING] = 0
-# Hero bets his J and gets called to showdown by Q -- Hero loses
-R[J][bet_call][S.J_P1_bet_P2_call_show_Q] = -2
-# Hero bets his J and gets called to showdown by K -- Hero loses
-R[J][bet_call][S.J_P1_bet_P2_call_show_K] = -2
-# Checks and then folds after villain bets his Q or K -- loses 1
-R[S.J_P1_check_P2_bet_P1_PENDING][check_fold][S.J_P1_check_P2_bet_P1_fold] = -1
-# Checks and then calls villain betting his Q -- Hero loses 2
-R[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_Q] = - 2
-# Checks and then calls villain betting his K -- Hero loses 2
-R[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_K] = - 2
+def R(s: str, a, s_: Type[S]):
+    """ Computes the reward function corresponding to the transition function
+    of the Kuhn-Poker example above. In our case the reward is determined by s_ alone """
+    # Parse state-index to state-name string representation
+    s_ = S(s_).name
+    # If initial state is successor state s_ -- all actions get reward of 0
+    if '____' in s_:
+        return 0
+    # Player 1 checked, Player 2 bet, Player 1 needs to act
+    if 'PENDING' in s_:
+        return 0
+    # Both players checked, win or lose ante, depending on card strength
+    if 'P2_check' in s_:
+        p1_card = s_[0]
+        p2_card = s_[-1]
+        return -1 if cards.index(p1_card) < cards.index(p2_card) else 1
+    # If player one folds after a bet, he loses his ante, regardless of card strength
+    if 'P2_bet_P1_fold' in s_:
+        return -1
+    # Player 1 checks and Player 2 bets, Player 1 then calls,
+    # the better hand wins the other players ante
+    if 'P2_bet_P1_call' in s_:
+        p1_card = s_[0]
+        p2_card = s_[-1]
+        return -2 if cards.index(p1_card) < cards.index(p2_card) else 2
+    # Player 1 bets and Player 2 folds in response
+    if 'P2_fold' in s_:
+        return 1
+    # Player 1 bets and Player 2 calls, the better hand wins the other players ante
+    if 'P2_call' in s_:
+        p1_card = s_[0]
+        p2_card = s_[-1]
+        return -2 if cards.index(p1_card) < cards.index(p2_card) else 2
+    raise ValueError(f'The state {s_} is missing in the definition of the State Space. '
+                     f'Fix class S(IntEnum) defined above.')
 
-# Villain holds K and bets -- Hero has to move
-R[Q][check_fold][S.Q_P1_check_P2_bet_P1_PENDING] = 0
-# Villain holds J and checks -- Hero wins by default
-R[Q][check_fold][S.Q_P1_check_P2_check_show_J] = 1
-# Villain holds J and folds after Hero Bet -- Hero wins
-R[Q][bet_call][S.Q_P1_bet_P2_fold] = 1
-# Hero bets his Q and gets called to showdown by K -- Hero loses
-R[Q][bet_call][S.Q_P1_bet_P2_call_show_K] = -2
-# Checks and then folds after villain bets -- Hero loses 1
-R[S.Q_P1_check_P2_bet_P1_PENDING][check_fold][S.Q_P1_check_P2_bet_P1_fold] = -1
-# Checks and then calls villain betting his K -- Hero loses 2
-R[S.Q_P1_check_P2_bet_P1_PENDING][bet_call][S.Q_P1_check_P2_bet_P1_call_P2_show_K] = -2
-
-# Villain holds J and checks -- Hero wins by default
-R[K][check_fold][S.K_P1_check_P2_check_show_J] = 1
-# Villain holds Q and bets -- Hero has to move
-R[K][check_fold][S.K_P1_check_P2_bet_P1_PENDING] = 0
-# Villain holds J and folds after Hero Bet -- Hero wins
-R[K][bet_call][S.K_P1_bet_P2_fold] = 1
-# Hero bets his K and gets called to showdown by Q -- Hero wins
-R[K][bet_call][S.K_P1_bet_P2_call_show_Q] = 2
-# Checks and then folds after villain bets -- Hero loses 1 by default
-R[S.K_P1_check_P2_bet_P1_PENDING][check_fold][S.K_P1_check_P2_bet_P1_fold] = -1
-# Checks and then calls after villain bets his Q -- Hero wins 2
-R[S.K_P1_check_P2_bet_P1_PENDING][bet_call][S.K_P1_check_P2_bet_P1_call_P2_show_Q] = 2
 
 import pandas as pd
 import numpy as np
@@ -165,20 +167,22 @@ df = pd.DataFrame()  # fill with Q values
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
     Q = np.zeros((N_STATES, N_ACTIONS))
     for _ in range(n_iters):
+        print(Q)
         for s in range(N_STATES):  # for all states s
             for a in range(N_ACTIONS):  # for all actions a
                 sum_sp = 0
-                for S in range(N_STATES):  # for all reachable states s'
-                    sum_sp += (T[s][a][S] * (R[s][a][S] + gamma * max(Q[S])))
+                for s_ in range(N_STATES):  # for all reachable states s'
+                    r = R(s, a, s_)
+                    max_q = max(Q[s_])
+                    t = T[s][a][s_]
+                    sum_sp += (t * (r + gamma * max_q))
                 Q[s][a] = sum_sp
-        # dataframe after every iteration
-        df = pd.DataFrame(Q.T, columns=state_names)
-        print(df.head())
+    df = pd.DataFrame(Q.T, columns=state_names)
+    print(df.head())
 
     return Q
 
 
 if __name__ == "__main__":
     Q = Qvalue_iteration(T, R, 1, n_iters=10)
-    print(Q[0][0])
-    print(Q[0][1])
+    print(Q)
