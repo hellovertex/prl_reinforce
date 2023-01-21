@@ -60,9 +60,6 @@ class A(IntEnum):
     N_ACTIONS = 2
 
 
-check_fold = A.check_fold
-bet_call = A.bet_call
-
 # Define MDP - Transition function
 N_STATES = len(state_names)
 N_ACTIONS = A.N_ACTIONS
@@ -71,7 +68,8 @@ T = np.zeros((N_STATES, N_ACTIONS, N_STATES))
 # Assume villain has the following strategy: villain...
 # 1) Always bets when facing a check, unless he has J (Villain only checks when holding J)
 # 2) Always calls when facing a bet, unless he has J (Villain only folds when holding J).
-
+check_fold = A.check_fold
+bet_call = A.bet_call
 # Rollouts where Hero holds Jack
 # villain will always bet when holding Q or K
 T[J][check_fold][S.J_P1_check_P2_bet_P1_PENDING] = 1
@@ -209,13 +207,10 @@ def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
         # print(df.head())
         for s in range(N_STATES):  # for all states s
             for a in range(N_ACTIONS):  # for all actions a
-                sum_sp = 0
+                qs = 0
                 for s_ in range(N_STATES):  # for all reachable states s'
-                    r = R(s, a, s_)
-                    max_q = max(Q[s_])
-                    t = T[s][a][s_]
-                    sum_sp += (t * (r + gamma * max_q))
-                Q[s][a] = sum_sp
+                    qs += (T[s][a][s_] * (R(s, a, s_) + gamma * max(Q[s_])))
+                Q[s][a] = qs
     plot_q_values(Q)
     return Q
 
