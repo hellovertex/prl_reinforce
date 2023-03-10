@@ -84,7 +84,7 @@ def run(algo_class=ApexDQN,
                          # # overhead but may be worth if stepping the env is slow
                          # num_envs_per_worker=4,
                          # remote_worker_envs=True,
-                         # rollout_fragment_length=50,
+                         # rollout_fragment_length= 50,
                          horizon=max_iter_per_episode,
                          )
     conf = conf.evaluation(evaluation_interval=10)
