@@ -20,7 +20,8 @@ from tianshou.utils import TensorboardLogger
 from torch.utils.tensorboard import SummaryWriter
 
 from prl.baselines.agents.tianshou_policies import get_rainbow_config
-from prl.baselines.examples.examples_tianshou_env import make_vectorized_prl_env, make_vectorized_pettingzoo_env
+from prl.baselines.examples.examples_tianshou_env import make_vectorized_prl_env, \
+    make_vectorized_pettingzoo_env
 
 import click
 from hydra.core.config_store import ConfigStore
@@ -34,6 +35,7 @@ import hydra
 class Reward:
     def __init__(self):
         self.reward = 0
+        self.cumulated = 0
 
 
 @dataclass
@@ -90,7 +92,8 @@ class TrainEval:
         env_config = {"env_wrapper_cls": AugmentObservationWrapper,
                       # "stack_sizes": [100, 125, 150, 175, 200, 250],
                       "stack_sizes": stack_sizes,
-                      "multiply_by": 1,  # use 100 for floats to remove decimals but we have int stacks
+                      "multiply_by": 1,
+                      # use 100 for floats to remove decimals but we have int stacks
                       "scale_rewards": False,  # we do this ourselves
                       "blinds": [sb, bb]}
         # env = init_wrapped_env(**env_config)
@@ -101,7 +104,7 @@ class TrainEval:
                                                            single_env_config=env_config,
                                                            agent_names=agents,
                                                            mc_model_ckpt_path=mc_model_ckpt_path)
-
+        max_reward = Reward()
         params = {'device': self.config.device,
                   'load_from_ckpt': ckpt_save_path,
                   'lr': 1e-6,
@@ -116,7 +119,8 @@ class TrainEval:
         rainbow_policy = RainbowPolicy(**rainbow_config)
         if self.config.load_ckpt:
             try:
-                rainbow_policy.load_state_dict(torch.load(ckpt_save_path, map_location=self.config.device))
+                rainbow_policy.load_state_dict(
+                    torch.load(ckpt_save_path, map_location=self.config.device))
             except FileNotFoundError:
                 # initial training, no ckpt created yet, ignore silently
                 pass
@@ -157,6 +161,8 @@ class TrainEval:
                 policy.policies[agents[aid]].set_eps(eps)
             if env_step % 1000 == 0:
                 logger.write("train/env_step", env_step, {"train/eps": eps})
+                logger.write("train/accumulated_reward", env_step,
+                             {"train/accumulated_reward": max_reward.cumulated})
             if not self.config.no_priority:
                 if env_step <= self.config.beta_anneal_step:
                     beta = beta - env_step / self.config.beta_anneal_step * \
@@ -183,11 +189,14 @@ class TrainEval:
         def stop_fn(mean_rewards):
             return mean_rewards >= win_rate_early_stopping
 
-        max_reward = Reward()
-
         def reward_metric(rews):
             # The reward at index 0 is the reward relative to observer
             rew = np.mean(rews[:, learning_agent_ids[0]])
+            try:
+                max_reward.cumulated += rew
+            except OverflowError:
+                # seems like we are rich
+                pass
             if rew > max_reward.reward:
                 max_reward.reward = rew
             return rew
@@ -216,14 +225,17 @@ class TrainEval:
         trainer = OffpolicyTrainer(policy=policy,
                                    train_collector=train_collector,
                                    test_collector=test_collector,
-                                   max_epoch=self.config.epoch,  # set stop_fn for early stopping
-                                   step_per_epoch=self.config.step_per_epoch,  # num transitions per epoch
+                                   max_epoch=self.config.epoch,
+                                   # set stop_fn for early stopping
+                                   step_per_epoch=self.config.step_per_epoch,
+                                   # num transitions per epoch
                                    step_per_collect=self.config.step_per_collect,
                                    # step_per_collect -> update network -> repeat
                                    episode_per_test=self.config.episode_per_test,
                                    # games to play for one policy evaluation
                                    batch_size=self.config.batch_size,
-                                   update_per_step=self.config.update_per_step,  # fraction of steps_per_collect
+                                   update_per_step=self.config.update_per_step,
+                                   # fraction of steps_per_collect
                                    train_fn=train_fn,
                                    test_fn=test_fn,
                                    stop_fn=None,  # early stopping
@@ -234,7 +246,8 @@ class TrainEval:
                                    logger=logger,
                                    verbose=True,
                                    show_progress=True,
-                                   test_in_train=False  # whether to test in training phase
+                                   test_in_train=False
+                                   # whether to test in training phase
                                    )
         result = trainer.run()
         t0 = time.time()
