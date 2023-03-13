@@ -30,7 +30,7 @@ from hydra.core.config_store import ConfigStore
 #  what do we need in terms of reproducability?
 from omegaconf import DictConfig, OmegaConf
 import hydra
-
+from prl.environment.Wrappers.vectorizer import AgentObservationType
 
 class Reward:
     def __init__(self):
@@ -40,7 +40,7 @@ class Reward:
 
 @dataclass
 class _TrainConfig:
-    num_players: int
+    num_players: List[int]
     device: str
     buffer_sizes: List[int]
     target_update_freqs: List[int]
@@ -62,6 +62,7 @@ class _TrainConfig:
     eps_test: float
     no_priority: bool
     load_ckpt: bool
+    agent_observation_mode: AgentObservationType
 
 
 # @dataclass
@@ -69,24 +70,24 @@ class _TrainConfig:
 #     debug: str
 #     baselines: List[_TrainConfig] = field(default_factory=_TrainConfig)
 
-
+from prl.environment.Wrappers.augment import AugmentObservationWrapper
 class TrainEval:
     def __init__(self, config: _TrainConfig):
         self.config = config
 
-    def _run(self, buffer_size, target_update_freq):
-        dir_suffix = f"num_players={target_update_freq},buffer_size={buffer_size}"
+    def _run(self, num_players, buffer_size, target_update_freq):
+        dir_suffix = f"num_players={num_players}_target_update_freq={target_update_freq},buffer_size={buffer_size}"
         win_rate_early_stopping = np.inf,
         best_rew = -np.inf
         learning_agent_ids = [0]
-        logdir = [".", "v3", "rainbow_self_play", dir_suffix]
+        logdir = [".", "v3", "vs_oracle", dir_suffix]
         ckpt_save_path = os.path.join(
             *logdir, f'ckpt.pt'
         )
         # environment config
         starting_stack = 20000
-        stack_sizes = [starting_stack for _ in range(self.config.num_players)]
-        agents = [f'p{i}' for i in range(self.config.num_players)]
+        stack_sizes = [starting_stack for _ in range(num_players)]
+        agents = [f'p{i}' for i in range(num_players)]
         sb = 50
         bb = 100
         env_config = {"env_wrapper_cls": AugmentObservationWrapper,
@@ -95,7 +96,8 @@ class TrainEval:
                       "multiply_by": 1,
                       # use 100 for floats to remove decimals but we have int stacks
                       "scale_rewards": False,  # we do this ourselves
-                      "blinds": [sb, bb]}
+                      "blinds": [sb, bb],
+                      "agent_observation_mode": self.config.agent_observation_mode}
         # env = init_wrapped_env(**env_config)
         # obs0 = env.reset(config=None)
         num_envs = 31
@@ -127,14 +129,10 @@ class TrainEval:
         # # 'load_from_ckpt_dir': None
         rainbow = RainbowPolicy(**rainbow_config)
         random_agent = TianshouRandomAgent()
-        policy = MultiAgentPolicyManager([
-            rainbow,
-            random_agent,
-            random_agent,
-            random_agent,
-            random_agent,
-            random_agent
-        ], wrapped_env)  # policy is made from PettingZooEnv
+        marl_agents = [rainbow]
+        [marl_agents.append(random_agent) for _ in range(num_players - 1)]
+
+        policy = MultiAgentPolicyManager(marl_agents, wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
 
         buffer = PrioritizedVectorReplayBuffer(
@@ -258,9 +256,10 @@ class TrainEval:
         return max_reward.reward
 
     def run(self):
-        for buffer_size in self.config.buffer_sizes:
-            for target_update_freq in self.config.target_update_freqs:
-                self._run(buffer_size, target_update_freq)
+        for n in self.config.num_players:
+            for buffer_size in self.config.buffer_sizes:
+                for target_update_freq in self.config.target_update_freqs:
+                    self._run(n, buffer_size, target_update_freq)
 
 
 # cs = ConfigStore.instance()
