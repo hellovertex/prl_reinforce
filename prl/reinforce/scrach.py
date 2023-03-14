@@ -32,6 +32,7 @@ from omegaconf import DictConfig, OmegaConf
 import hydra
 from prl.environment.Wrappers.vectorizer import AgentObservationType
 
+
 class Reward:
     def __init__(self):
         self.reward = 0
@@ -71,6 +72,8 @@ class _TrainConfig:
 #     baselines: List[_TrainConfig] = field(default_factory=_TrainConfig)
 
 from prl.environment.Wrappers.augment import AugmentObservationWrapper
+
+
 class TrainEval:
     def __init__(self, config: _TrainConfig):
         self.config = config
@@ -132,7 +135,8 @@ class TrainEval:
         marl_agents = [rainbow]
         [marl_agents.append(random_agent) for _ in range(num_players - 1)]
 
-        policy = MultiAgentPolicyManager(marl_agents, wrapped_env)  # policy is made from PettingZooEnv
+        policy = MultiAgentPolicyManager(marl_agents,
+                                         wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
 
         buffer = PrioritizedVectorReplayBuffer(
