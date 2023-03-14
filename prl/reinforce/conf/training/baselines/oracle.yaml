@@ -15,7 +15,7 @@ random_agent:
   beta_anneal_step: 5000000
   weight_norm: True
   epoch: 1_000
-  step_per_epoch: 10_000
+  step_per_epoch: 5_000
   step_per_collect: 100
   episode_per_test: 50
   batch_size: 256
