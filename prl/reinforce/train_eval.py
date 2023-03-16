@@ -147,7 +147,8 @@ class TrainEval:
         marl_agents = [rainbow]
         [marl_agents.append(random_agent) for _ in range(num_players - 1)]
 
-        policy = MultiAgentPolicyManager(marl_agents, wrapped_env)  # policy is made from PettingZooEnv
+        policy = MultiAgentPolicyManager(marl_agents,
+                                         wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
 
         buffer = PrioritizedVectorReplayBuffer(
