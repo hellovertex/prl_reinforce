@@ -3,7 +3,7 @@
 # 2. this will mean it learns to play perfect ranges
 # 3. rl training vs random agent
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional, Dict
 import os
 import os
 import pprint
@@ -31,6 +31,7 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig, OmegaConf
 import hydra
 from prl.environment.Wrappers.vectorizer import AgentObservationType
+
 
 class Reward:
     def __init__(self):
@@ -71,9 +72,21 @@ class _TrainConfig:
 #     baselines: List[_TrainConfig] = field(default_factory=_TrainConfig)
 
 from prl.environment.Wrappers.augment import AugmentObservationWrapper
+
+
 class TrainEval:
-    def __init__(self, config: _TrainConfig):
+    def __init__(self,
+                 config: _TrainConfig):
         self.config = config
+        self._debug_reset_config_state_dict = None
+
+    @property
+    def debug_reset_config_state_dict(self):
+        return self._debug_reset_config_state_dict
+
+    @debug_reset_config_state_dict.setter
+    def debug_reset_config_state_dict(self, val):
+        self._debug_reset_config_state_dict = val
 
     def _run(self, num_players, buffer_size, target_update_freq):
         dir_suffix = f"num_players={num_players}_target_update_freq={target_update_freq},buffer_size={buffer_size}"
@@ -102,10 +115,12 @@ class TrainEval:
         # obs0 = env.reset(config=None)
         num_envs = 31
         mc_model_ckpt_path = "/home/hellovertex/Documents/github.com/prl_baselines/data/01_raw/0.25-0.50/ckpt/ckpt.pt"
-        venv, wrapped_env = make_vectorized_pettingzoo_env(num_envs=num_envs,
-                                                           single_env_config=env_config,
-                                                           agent_names=agents,
-                                                           mc_model_ckpt_path=mc_model_ckpt_path)
+        venv, wrapped_env = make_vectorized_pettingzoo_env(
+            num_envs=num_envs,
+            single_env_config=env_config,
+            agent_names=agents,
+            mc_model_ckpt_path=mc_model_ckpt_path,
+            debug_reset_config_state_dict=self._debug_reset_config_state_dict)
         max_reward = Reward()
         params = {'device': self.config.device,
                   'load_from_ckpt': ckpt_save_path,
@@ -256,6 +271,11 @@ class TrainEval:
         return max_reward.reward
 
     def run(self):
+        """
+        reset_config_state_dict: if passed, will be used to reset the environment (every episode)
+        use this for testing and debugging, to initialize the train environment from specified cards and
+        deck. see steinberger PokerEnv for description how to set the state dict
+        """
         for n in self.config.num_players:
             for buffer_size in self.config.buffer_sizes:
                 for target_update_freq in self.config.target_update_freqs:

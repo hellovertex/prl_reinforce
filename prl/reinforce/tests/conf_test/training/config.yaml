@@ -1,0 +1,7 @@
+defaults:
+  - _self_  # relative position of_this_ config file in the defaults list
+  - baselines:
+    #- random_agent  # python scrach.py 'baselines=[calling_station, random_agent]'
+    - oracle  # python scrach.py 'baselines=[calling_station, random_agent]'
+    - calling_station
+debug: True
