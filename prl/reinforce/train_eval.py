@@ -11,7 +11,8 @@ import time
 
 import numpy as np
 import torch
-from prl.baselines.agents.tianshou_agents import TianshouRandomAgent
+from prl.baselines.agents.tianshou_agents import TianshouRandomAgent, TianshouAlwaysFoldAgentDummy, \
+    TianshouCallingStation
 from prl.environment.Wrappers.augment import AugmentObservationWrapper
 from tianshou.data import Collector, PrioritizedVectorReplayBuffer
 from tianshou.policy import RainbowPolicy, MultiAgentPolicyManager
@@ -86,12 +87,17 @@ class TrainEval:
     def debug_reset_config_state_dict(self, val):
         self._debug_reset_config_state_dict = val
 
-    def _run(self, num_players, buffer_size, target_update_freq):
+    def _run(self,
+             num_players,
+             buffer_size,
+             target_update_freq,
+             versus_agent_cls=None):
+        # pass versus_agent_cls to set opponents
         dir_suffix = f"num_players={num_players}_target_update_freq={target_update_freq},buffer_size={buffer_size}"
         win_rate_early_stopping = np.inf,
         best_rew = -np.inf
         learning_agent_ids = [0]
-        logdir = [".", "v3", "vs_oracle", dir_suffix]
+        logdir = [".", "v4", "vs_oracle", dir_suffix]
         ckpt_save_path = os.path.join(
             *logdir, f'ckpt.pt'
         )
@@ -111,7 +117,7 @@ class TrainEval:
                       "agent_observation_mode": self.config.agent_observation_mode}
         # env = init_wrapped_env(**env_config)
         # obs0 = env.reset(config=None)
-        num_envs = 31
+        num_envs = 1
         mc_model_ckpt_path = "/home/hellovertex/Documents/github.com/prl_baselines/data/01_raw/0.25-0.50/ckpt/ckpt.pt"
         venv, wrapped_env = make_vectorized_pettingzoo_env(
             num_envs=num_envs,
@@ -142,8 +148,10 @@ class TrainEval:
         # # 'load_from_ckpt_dir': None
         rainbow = RainbowPolicy(**rainbow_config)
         random_agent = TianshouRandomAgent()
+        # fold_dummy = TianshouAlwaysFoldAgentDummy()
+        # calling_station = TianshouCallingStation()
         marl_agents = [rainbow]
-        [marl_agents.append(random_agent) for _ in range(num_players - 1)]
+        [marl_agents.append(versus_agent_cls()) for _ in range(num_players - 1)]
 
         policy = MultiAgentPolicyManager(marl_agents,
                                          wrapped_env)  # policy is made from PettingZooEnv
@@ -269,7 +277,7 @@ class TrainEval:
         # watch()
         return max_reward.reward
 
-    def run(self):
+    def run(self, versus_agent_cls=None):
         """
         reset_config_state_dict: if passed, will be used to reset the environment (every episode)
         use this for testing and debugging, to initialize the train environment from specified cards and
@@ -278,7 +286,7 @@ class TrainEval:
         for n in self.config.num_players:
             for buffer_size in self.config.buffer_sizes:
                 for target_update_freq in self.config.target_update_freqs:
-                    self._run(n, buffer_size, target_update_freq)
+                    self._run(n, buffer_size, target_update_freq, versus_agent_cls)
 
 
 # cs = ConfigStore.instance()
