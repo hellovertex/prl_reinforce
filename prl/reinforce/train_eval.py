@@ -2,38 +2,30 @@
 # 1. run self play with rainbow agent that has seer mode enabled POSTFLOP only
 # 2. this will mean it learns to play perfect ranges
 # 3. rl training vs random agent
-import enum
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Tuple
-import os
 import os
 import pprint
 import time
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
 import gym
+# todo: implement RL trainer vs Random agent
+#  what do we need in terms of experimental evaluation (tables, mbb charts)
+#  what do we need in terms of reproducability?
+import hydra
 import numpy as np
 import torch
-from prl.baselines.agents.tianshou_agents import TianshouRandomAgent, TianshouAlwaysFoldAgentDummy, \
+from prl.baselines.agents.tianshou_agents import TianshouRandomAgent, \
+    TianshouAlwaysFoldAgentDummy, \
     TianshouCallingStation, OracleAgent
-from prl.environment.Wrappers.augment import AugmentObservationWrapper
+from prl.baselines.agents.tianshou_policies import get_rainbow_config
+from prl.baselines.examples.examples_tianshou_env import make_vectorized_pettingzoo_env
+from prl.environment.Wrappers.vectorizer import AgentObservationType
 from tianshou.data import Collector, PrioritizedVectorReplayBuffer
 from tianshou.policy import RainbowPolicy, MultiAgentPolicyManager
 from tianshou.trainer import OffpolicyTrainer
 from tianshou.utils import TensorboardLogger
 from torch.utils.tensorboard import SummaryWriter
-
-from prl.baselines.agents.tianshou_policies import get_rainbow_config
-from prl.baselines.examples.examples_tianshou_env import make_vectorized_prl_env, \
-    make_vectorized_pettingzoo_env
-
-import click
-from hydra.core.config_store import ConfigStore
-# todo: implement RL trainer vs Random agent
-#  what do we need in terms of experimental evaluation (tables, mbb charts)
-#  what do we need in terms of reproducability?
-from omegaconf import DictConfig, OmegaConf
-import hydra
-from prl.environment.Wrappers.vectorizer import AgentObservationType
 
 
 class Reward:
@@ -125,7 +117,8 @@ class RegisteredAgent:
                       'v_min': rainbow_config.v_min,
                       'v_max': rainbow_config.v_max,
                       'estimation_step': rainbow_config.estimation_step,
-                      'target_update_freq': rainbow_config.target_update_freq  # training steps
+                      'target_update_freq': rainbow_config.target_update_freq
+                      # training steps
                       }
             rainbow_config = get_rainbow_config(params)
             rainbow_policy = RainbowPolicy(**rainbow_config)
@@ -216,7 +209,10 @@ class TrainEval:
         ckpt_save_path = os.path.join(
             *logdir, f'ckpt.pt'
         )
-        agents = [str(a) for a in self.config.agents]
+        # agents = [str(a) for a in self.config.agents]
+        # *** WARNING ***
+        # NEVER CHANGE this:
+        agents = [f'p{i}' for i in range(num_players)]
         # env = init_wrapped_env(**env_config)
         # obs0 = env.reset(config=None)
         num_envs = self.config.num_parallel_envs
@@ -236,15 +232,16 @@ class TrainEval:
                                           'v_min': -6,
                                           'v_max': 6,
                                           'estimation_step': 3,
-                                          'target_update_freq': target_update_freq  # training steps
+                                          'target_update_freq': target_update_freq
+                                          # training steps
                                           })
         oracle_config = OracleAgentConfig(**{'device': self.rl_config.device,
                                              'model_ckpt_path': mc_model_ckpt_path,
                                              'num_players': num_players,
                                              'model_hidden_dims': (512,)})
-        marl_agents, rainbow_config = self.get_agent_list(agent_names=agents,
-                                          rainbow_config=rainbow_config,
-                                          oracle_config=oracle_config)
+        marl_agents, rainbow_config = self.get_agent_list(agent_names=self.config.agents,
+                                                          rainbow_config=rainbow_config,
+                                                          oracle_config=oracle_config)
         policy = MultiAgentPolicyManager(marl_agents,
                                          wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
@@ -333,7 +330,8 @@ class TrainEval:
             return ckpt_save_path
 
         # test train_collector and start filling replay buffer
-        train_collector.collect(n_step=self.rl_config.batch_size * num_envs)  # todo rl_config.batch_size overwritten?
+        train_collector.collect(
+            n_step=self.rl_config.batch_size * num_envs)  # todo rl_config.batch_size overwritten?
         trainer = OffpolicyTrainer(policy=policy,
                                    train_collector=train_collector,
                                    test_collector=test_collector,
@@ -379,14 +377,17 @@ class TrainEval:
         num_players = len(self.config.agents)
         env_config = dict(self.env_config)
         env_config["env_wrapper_cls"] = AugmentObservationWrapper
-        env_config["stack_sizes"] = [self.env_config.starting_stack_size for _ in range(num_players)]
+        env_config["stack_sizes"] = [self.env_config.starting_stack_size for _ in
+                                     range(num_players)]
         env_config["multiply_by"] = 1
-        env_config["agent_observation_mode"] = eval(self.env_config.agent_observation_mode)
+        env_config["agent_observation_mode"] = eval(
+            self.env_config.agent_observation_mode)
         env_config.pop('starting_stack_size')
 
         for buffer_size in self.config.rl_config.buffer_sizes:
             for target_update_freq in self.config.rl_config.target_update_freqs:
-                self._run(env_config, num_players, buffer_size, target_update_freq, versus_agent_cls)
+                self._run(env_config, num_players, buffer_size, target_update_freq,
+                          versus_agent_cls)
 
 
 # cs = ConfigStore.instance()
