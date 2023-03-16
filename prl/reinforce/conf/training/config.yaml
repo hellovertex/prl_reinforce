@@ -1,10 +1,13 @@
 defaults:
+  - env_config: default
+  - rl_config: default
   - _self_  # relative position of_this_ config file in the defaults list
-  - rl_config: defaults
-    # overwrites `rl_params`
-    batch_size: 512
-  - env_config: defaults
-    agent_observation_mode: SEER
+# overwrites
+rl_config:
+  batch_size: 512
+env_config:
+  agent_observation_mode: AgentObservationType.SEER
+# CONFIG VALUES
 experiment_name: one_rainbow_against_4_oracle_1_random_agent
 agents:
   - rainbow_learner
@@ -13,10 +16,8 @@ agents:
   - oracle
   - oracle
   - random_agent
-
 num_parallel_envs: 1
 logdir_subdirs:
   - .
-  - v4
-  - vs_oracle
-  -
+  - v5
+  - "${experiment_name}"

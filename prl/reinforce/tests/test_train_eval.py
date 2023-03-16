@@ -3,7 +3,7 @@ from prl.baselines.agents.dummy_agents import DummyAgentFold, DummyAgentCall, Du
 from prl.baselines.agents.tianshou_agents import TianshouCallingStation, TianshouAlwaysFoldAgentDummy
 from prl.baselines.evaluation.utils import get_reset_config
 
-from prl.reinforce.train_eval import TrainEval, _TrainConfig
+from prl.reinforce.train_eval import TrainEval, TrainConfig
 
 from hydra import compose, initialize
 from omegaconf import DictConfig
@@ -16,7 +16,7 @@ def train_eval_runner():
     # todo define train_eval given test trainconfig
     initialize(version_base=None, config_path="conf_test/training")
     cfg: DictConfig = compose('config.yaml')
-    params = _TrainConfig(**cfg.baselines.random_agent)
+    params = TrainConfig(**cfg)
     return TrainEval(params)
 
 

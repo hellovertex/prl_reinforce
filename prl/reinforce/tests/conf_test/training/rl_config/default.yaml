@@ -1,5 +1,4 @@
-defaults:
-  num_players: 6
+default:
   device: 'cuda'
   buffer_sizes:
     - 10_000

@@ -1,0 +1,7 @@
+# env_wrapper_cls: AugmentObservationWrapper
+starting_stack_size: 20000
+blinds:
+  - 50  # small blind
+  - 100 # big blind
+scale_rewards: False
+agent_observation_mode: AgentObservationType.CARD_KNOWLEDGE  # or SEER

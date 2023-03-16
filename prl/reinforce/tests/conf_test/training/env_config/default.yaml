@@ -1,4 +1,4 @@
-defaults:
+default:
 #  env_wrapper_cls: AugmentObservationWrapper
   starting_stack_size: 20000
   sb: 50
