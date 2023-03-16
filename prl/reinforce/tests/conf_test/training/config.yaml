@@ -4,4 +4,3 @@ defaults:
     #- random_agent  # python scrach.py 'baselines=[calling_station, random_agent]'
     - oracle  # python scrach.py 'baselines=[calling_station, random_agent]'
     - calling_station
-debug: True

@@ -1,5 +1,5 @@
 random_agent:
-  num_players: 6
+  num_players: 4
   device: 'cuda'
   buffer_sizes:
     - 10_000

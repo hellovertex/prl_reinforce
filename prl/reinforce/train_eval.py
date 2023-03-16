@@ -88,7 +88,12 @@ class TrainEval:
     def debug_reset_config_state_dict(self, val):
         self._debug_reset_config_state_dict = val
 
-    def _run(self, num_players, buffer_size, target_update_freq):
+    def _run(self,
+             num_players,
+             buffer_size,
+             target_update_freq,
+             versus_agent_cls=None):
+        # pass versus_agent_cls to set opponents
         dir_suffix = f"num_players={num_players}_target_update_freq={target_update_freq},buffer_size={buffer_size}"
         win_rate_early_stopping = np.inf,
         best_rew = -np.inf
@@ -271,7 +276,7 @@ class TrainEval:
         # watch()
         return max_reward.reward
 
-    def run(self):
+    def run(self, versus_agent_cls=None):
         """
         reset_config_state_dict: if passed, will be used to reset the environment (every episode)
         use this for testing and debugging, to initialize the train environment from specified cards and
@@ -280,7 +285,7 @@ class TrainEval:
         for n in self.config.num_players:
             for buffer_size in self.config.buffer_sizes:
                 for target_update_freq in self.config.target_update_freqs:
-                    self._run(n, buffer_size, target_update_freq)
+                    self._run(n, buffer_size, target_update_freq, versus_agent_cls)
 
 
 # cs = ConfigStore.instance()
