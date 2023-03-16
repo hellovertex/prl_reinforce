@@ -1,0 +1,30 @@
+defaults:
+  - env_config: default
+  - rl_config: default
+  - _self_  # relative position of_this_ config file in the defaults list
+# overwrites
+rl_config:
+  batch_size: 512
+env_config:
+  agent_observation_mode: AgentObservationType.SEER
+# CONFIG VALUES
+experiment_name: self_play_oracle_training
+agents:
+  - rainbow_learner
+  - rainbow_learner
+  - rainbow_learner
+  - rainbow_learner
+  - rainbow_learner
+  - rainbow_learner
+learning_agent_ids:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+num_parallel_envs: 1
+logdir_subdirs:
+  - .
+  - v5
+  - self_play_oracle_training

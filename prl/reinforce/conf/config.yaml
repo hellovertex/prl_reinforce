@@ -1,0 +1,3 @@
+defaults:
+  - _self_
+  - training/debug_1vsRandom
