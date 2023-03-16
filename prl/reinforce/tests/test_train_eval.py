@@ -1,9 +1,14 @@
 import pytest
 
+from prl.reinforce.train_eval import TrainEval
 
+
+# @pytest.fixture
+# def env_four_players()
 @pytest.fixture
 def train_eval_runner():
     # todo define train_eval given test trainconfig
+    rnr = TrainEval()
     pass
 
 
