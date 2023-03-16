@@ -1,0 +1,24 @@
+defaults:
+  - env_config: default
+  - rl_config: default
+  - _self_  # relative position of_this_ config file in the defaults list
+# overwrites
+rl_config:
+  batch_size: 512
+  epoch: 1000
+env_config:
+  agent_observation_mode: AgentObservationType.SEER
+# CONFIG VALUES
+# possible agents (up to 6):
+# rainbow_learner, oracle, random_agent, calling_station, always_fold
+agents:
+  - rainbow_learner
+  - always_fold
+learning_agent_ids:
+  - 0
+num_parallel_envs: 31
+experiment_name: debug_1vs_random
+logdir_subdirs:
+  - .
+  - v5
+  - debug_1vs_random

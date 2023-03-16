@@ -1,6 +1,7 @@
 # CUSTOM
 data/
 environment.env
+prl/reinforce/outputs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
