@@ -130,7 +130,7 @@ class RegisteredAgent:
             rainbow_config = get_rainbow_config(params)
             rainbow_policy = RainbowPolicy(**rainbow_config)
             rainbow = RainbowPolicy(**rainbow_config)
-            return rainbow
+            return rainbow, rainbow_config
         elif name.lower() == 'oracle':
             return OracleAgent(
                 model_ckpt_path=oracle_config.model_ckpt_path,
@@ -140,13 +140,13 @@ class RegisteredAgent:
                 observation_space=oracle_config.observation_space,
                 num_players=oracle_config.num_players,
                 action_space=oracle_config.action_space
-            )
+            ), {}
         elif name.lower() == 'random_agent':
-            return TianshouRandomAgent()
+            return TianshouRandomAgent(), {}
         elif name.lower() == 'calling_station':
-            return TianshouCallingStation()
+            return TianshouCallingStation(), {}
         elif name.lower() == 'always_fold':
-            return TianshouAlwaysFoldAgentDummy()
+            return TianshouAlwaysFoldAgentDummy(), {}
         else:
             raise NotImplementedError("Agent not registered in class: RegisterdAgent")
 
@@ -159,6 +159,7 @@ class TrainConfig:
     rl_config: RLConfig
     env_config: EnvConfig
     agents: List[RegisteredAgent]
+    learning_agent_ids: List[int]
 
 
 # @dataclass
@@ -188,15 +189,18 @@ class TrainEval:
     @staticmethod
     def get_agent_list(agent_names, rainbow_config, oracle_config):
         marl_agents = {}
+        learner_config = {}
         for name in agent_names:
             if name not in marl_agents:
-                marl_agents['agent'] = RegisteredAgent.build_agent_instance(name,
-                                                                            rainbow_config,
-                                                                            oracle_config)
+                marl_agents[name], conf = RegisteredAgent.build_agent_instance(name,
+                                                                               rainbow_config,
+                                                                               oracle_config)
+                if name == 'rainbow_learner':
+                    learner_config = conf
         agents = []
         for name in agent_names:
             agents.append(marl_agents[name])
-        return agents
+        return agents, learner_config
 
     def _run(self,
              env_config,
@@ -206,7 +210,7 @@ class TrainEval:
              versus_agent_cls=None):
         # pass versus_agent_cls to set opponents
         win_rate_early_stopping = np.inf,
-        learning_agent_ids = [0]
+        learning_agent_ids = self.config.learning_agent_ids
         # logdir = [".", "v4", "vs_oracle", dir_suffix]
         logdir = self.config.logdir_subdirs
         ckpt_save_path = os.path.join(
@@ -215,7 +219,7 @@ class TrainEval:
         agents = [str(a) for a in self.config.agents]
         # env = init_wrapped_env(**env_config)
         # obs0 = env.reset(config=None)
-        num_envs = 31
+        num_envs = self.config.num_parallel_envs
         mc_model_ckpt_path = "/home/hellovertex/Documents/github.com/prl_baselines/data/01_raw/0.25-0.50/ckpt/ckpt.pt"
         venv, wrapped_env = make_vectorized_pettingzoo_env(
             num_envs=num_envs,
@@ -238,7 +242,7 @@ class TrainEval:
                                              'model_ckpt_path': mc_model_ckpt_path,
                                              'num_players': num_players,
                                              'model_hidden_dims': (512,)})
-        marl_agents = self.get_agent_list(agent_names=agents,
+        marl_agents, rainbow_config = self.get_agent_list(agent_names=agents,
                                           rainbow_config=rainbow_config,
                                           oracle_config=oracle_config)
         policy = MultiAgentPolicyManager(marl_agents,
@@ -363,7 +367,7 @@ class TrainEval:
         print(f'took {time.time() - t0} seconds')
         # pprint.pprint(result)
         # watch()
-        return reward_stats.reward
+        return reward_stats.best_reward
 
     def run(self, versus_agent_cls=None):
         """
