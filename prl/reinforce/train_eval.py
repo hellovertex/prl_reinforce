@@ -11,7 +11,8 @@ import time
 
 import numpy as np
 import torch
-from prl.baselines.agents.tianshou_agents import TianshouRandomAgent
+from prl.baselines.agents.tianshou_agents import TianshouRandomAgent, TianshouAlwaysFoldAgentDummy, \
+    TianshouCallingStation
 from prl.environment.Wrappers.augment import AugmentObservationWrapper
 from tianshou.data import Collector, PrioritizedVectorReplayBuffer
 from tianshou.policy import RainbowPolicy, MultiAgentPolicyManager
@@ -98,7 +99,7 @@ class TrainEval:
         win_rate_early_stopping = np.inf,
         best_rew = -np.inf
         learning_agent_ids = [0]
-        logdir = [".", "v3", "vs_oracle", dir_suffix]
+        logdir = [".", "v4", "vs_oracle", dir_suffix]
         ckpt_save_path = os.path.join(
             *logdir, f'ckpt.pt'
         )
@@ -118,7 +119,7 @@ class TrainEval:
                       "agent_observation_mode": self.config.agent_observation_mode}
         # env = init_wrapped_env(**env_config)
         # obs0 = env.reset(config=None)
-        num_envs = 31
+        num_envs = 1
         mc_model_ckpt_path = "/home/hellovertex/Documents/github.com/prl_baselines/data/01_raw/0.25-0.50/ckpt/ckpt.pt"
         venv, wrapped_env = make_vectorized_pettingzoo_env(
             num_envs=num_envs,
@@ -149,8 +150,10 @@ class TrainEval:
         # # 'load_from_ckpt_dir': None
         rainbow = RainbowPolicy(**rainbow_config)
         random_agent = TianshouRandomAgent()
+        # fold_dummy = TianshouAlwaysFoldAgentDummy()
+        # calling_station = TianshouCallingStation()
         marl_agents = [rainbow]
-        [marl_agents.append(random_agent) for _ in range(num_players - 1)]
+        [marl_agents.append(versus_agent_cls()) for _ in range(num_players - 1)]
 
         policy = MultiAgentPolicyManager(marl_agents,
                                          wrapped_env)  # policy is made from PettingZooEnv

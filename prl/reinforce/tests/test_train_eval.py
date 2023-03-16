@@ -1,5 +1,6 @@
 import pytest
 from prl.baselines.agents.dummy_agents import DummyAgentFold, DummyAgentCall, DummyAgentAllIn
+from prl.baselines.agents.tianshou_agents import TianshouCallingStation, TianshouAlwaysFoldAgentDummy
 from prl.baselines.evaluation.utils import get_reset_config
 
 from prl.reinforce.train_eval import TrainEval, _TrainConfig
@@ -33,4 +34,5 @@ def test_train_eval_rewards_are_correct(train_eval_runner):
     # ]
     train_eval_runner.debug_reset_config_state_dict = get_reset_config(player_hands, board)
     # set breakpoints inside run and see if everything behaves as expected
-    train_eval_runner.run(versus_agent_cls=DummyAgentFold)
+    # train_eval_runner.run(versus_agent_cls=DummyAgentFold)
+    train_eval_runner.run(versus_agent_cls=TianshouAlwaysFoldAgentDummy)
