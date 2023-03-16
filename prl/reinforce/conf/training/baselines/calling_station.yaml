@@ -1,7 +1,0 @@
-calling_station:
-  device: 'cuda'
-  some_list:
-    - 10
-    - 20
-    - 30
-    - 99

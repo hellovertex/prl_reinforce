@@ -1,0 +1,7 @@
+defaults:
+#  env_wrapper_cls: AugmentObservationWrapper
+  starting_stack_size: 20000
+  sb: 50
+  bb: 100
+  scale_rewards: False
+  agent_observation_mode: CARD_KNOWLEDGE  # or SEER

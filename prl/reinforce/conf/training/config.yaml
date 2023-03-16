@@ -1,7 +1,22 @@
 defaults:
   - _self_  # relative position of_this_ config file in the defaults list
-  - baselines:
-    #- random_agent  # python scrach.py 'baselines=[calling_station, random_agent]'
-    - oracle  # python scrach.py 'baselines=[calling_station, random_agent]'
-    - calling_station
-debug: True
+  - rl_config: defaults
+    # overwrites `rl_params`
+    batch_size: 512
+  - env_config: defaults
+    agent_observation_mode: SEER
+experiment_name: one_rainbow_against_4_oracle_1_random_agent
+agents:
+  - rainbow_learner
+  - oracle
+  - oracle
+  - oracle
+  - oracle
+  - random_agent
+
+num_parallel_envs: 1
+logdir_subdirs:
+  - .
+  - v4
+  - vs_oracle
+  -

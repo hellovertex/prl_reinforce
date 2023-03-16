@@ -1,12 +1,16 @@
-random_agent:
-  num_players:
-  - 2
-  - 6
+defaults:
+  num_players: 6
   device: 'cuda'
   buffer_sizes:
+    - 10_000
+    - 50_000
     - 100_000
+    - 1_000_000
   target_update_freqs:
+    - 5000
     - 50000
+    - 100000
+    - 1_000_000
   dir_suffix: str
   obs_stack: 1
   alpha: 0.5
@@ -14,8 +18,8 @@ random_agent:
   beta_final: 1
   beta_anneal_step: 5000000
   weight_norm: True
-  epoch: 1_000
-  step_per_epoch: 5_000
+  epoch: 5_000
+  step_per_epoch: 10_000
   step_per_collect: 100
   episode_per_test: 50
   batch_size: 256
@@ -25,4 +29,3 @@ random_agent:
   eps_test: 0.0
   no_priority: False
   load_ckpt: True
-  agent_observation_mode: 2  # SEER

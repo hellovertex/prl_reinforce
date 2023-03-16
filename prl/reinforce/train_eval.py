@@ -40,8 +40,7 @@ class Reward:
 
 
 @dataclass
-class _TrainConfig:
-    num_players: List[int]
+class RLConfig:
     device: str
     buffer_sizes: List[int]
     target_update_freqs: List[int]
@@ -63,7 +62,6 @@ class _TrainConfig:
     eps_test: float
     no_priority: bool
     load_ckpt: bool
-    agent_observation_mode: AgentObservationType
 
 
 # @dataclass
