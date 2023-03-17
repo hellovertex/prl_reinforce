@@ -39,6 +39,8 @@ class RLConfig:
     device: str
     buffer_sizes: List[int]
     target_update_freqs: List[int]
+    eps_decay_in_first_n_steps: int
+    n_step_lookahead: int
     dir_suffix: str
     obs_stack: int
     alpha: float
@@ -202,10 +204,10 @@ class TrainEval:
              target_update_freq,
              versus_agent_cls=None):
         # pass versus_agent_cls to set opponents
-        win_rate_early_stopping = np.inf,
+        win_rate_early_stopping = (num_players - 1) * self.env_config.starting_stack_size / self.env_config.blinds[1]
         learning_agent_ids = self.config.learning_agent_ids
         # logdir = [".", "v4", "vs_oracle", dir_suffix]
-        logdir = self.config.logdir_subdirs
+        logdir = self.config.logdir_subdirs + [f'_buffer={buffer_size}', f'_freq={target_update_freq}']
         ckpt_save_path = os.path.join(
             *logdir, f'ckpt.pt'
         )
@@ -231,7 +233,7 @@ class TrainEval:
                                           'noisy_std': 0.1,
                                           'v_min': -6,
                                           'v_max': 6,
-                                          'estimation_step': 3,
+                                          'estimation_step': self.rl_config.n_step_lookahead,
                                           'target_update_freq': target_update_freq
                                           # training steps
                                           })
@@ -261,8 +263,8 @@ class TrainEval:
 
         def train_fn(epoch, env_step, beta=self.rl_config.beta):
             # linear decay in the first 10M steps
-            if env_step <= 1e7:
-                eps = self.rl_config.eps_train - env_step / 1e7 * \
+            if env_step <= self.rl_config.eps_decay_in_first_n_steps:
+                eps = self.rl_config.eps_train - env_step / self.rl_config.eps_decay_in_first_n_steps * \
                       (self.rl_config.eps_train - self.rl_config.eps_train_final)
             else:
                 eps = self.rl_config.eps_train_final
@@ -348,7 +350,7 @@ class TrainEval:
                                    # fraction of steps_per_collect
                                    train_fn=train_fn,
                                    test_fn=test_fn,
-                                   stop_fn=None,  # early stopping
+                                   stop_fn=stop_fn,  # early stopping
                                    save_best_fn=save_best_fn,
                                    save_checkpoint_fn=save_checkpoint_fn,
                                    resume_from_log=self.rl_config.load_ckpt,

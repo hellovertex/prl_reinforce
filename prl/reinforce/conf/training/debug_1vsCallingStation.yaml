@@ -6,6 +6,7 @@ defaults:
 rl_config:
   batch_size: 512
   epoch: 1000
+  n_step_lookahead: 1
 env_config:
   agent_observation_mode: AgentObservationType.SEER
 # CONFIG VALUES
@@ -13,12 +14,13 @@ env_config:
 # rainbow_learner, oracle, random_agent, calling_station, always_fold
 agents:
   - rainbow_learner
-  - random_agent
+  - calling_station
 learning_agent_ids:
   - 0
 num_parallel_envs: 31
-experiment_name: debug_1vs_random
+experiment_name: debug_1vs_caller
 logdir_subdirs:
   - .
   - v5
-  - debug_1vs_random
+  - debug_1vs_caller
+  - n_step_lookahead=1

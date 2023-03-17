@@ -1,10 +1,12 @@
 device: 'cuda'
 buffer_sizes:
-  - 10_000
   - 100_000
+  - 10_000
+# learning step = 1/(update_per_step * step_per_collect) env steps
 target_update_freqs:
+  - 500
+  - 1000
   - 5000
-  - 50000
 dir_suffix: str
 obs_stack: 1
 alpha: 0.5
@@ -13,12 +15,14 @@ beta_final: 1
 beta_anneal_step: 5000000
 weight_norm: True
 epoch: 5_000
-step_per_epoch: 10_000
+step_per_epoch: 20_000
 step_per_collect: 100
-episode_per_test: 50
+episode_per_test: 200
+n_step_lookahead: 1
 batch_size: 256
 update_per_step: 0.1
 eps_train: 0.2
+eps_decay_in_first_n_steps: 1_000_000
 eps_train_final: 0.05
 eps_test: 0.0
 no_priority: False
