@@ -7,6 +7,7 @@ rl_config:
   batch_size: 512
   epoch: 1000
   n_step_lookahead: 1
+  device: 'cpu'
 env_config:
   agent_observation_mode: AgentObservationType.SEER
 # CONFIG VALUES

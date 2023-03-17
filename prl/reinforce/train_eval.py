@@ -21,7 +21,7 @@ from prl.baselines.agents.tianshou_agents import TianshouRandomAgent, \
 from prl.baselines.agents.tianshou_policies import get_rainbow_config
 from prl.baselines.examples.examples_tianshou_env import make_vectorized_pettingzoo_env
 from prl.environment.Wrappers.vectorizer import AgentObservationType
-from tianshou.data import Collector, PrioritizedVectorReplayBuffer
+from tianshou.data import Collector, PrioritizedVectorReplayBuffer, VectorReplayBuffer
 from tianshou.policy import RainbowPolicy, MultiAgentPolicyManager
 from tianshou.trainer import OffpolicyTrainer
 from tianshou.utils import TensorboardLogger
@@ -250,17 +250,19 @@ class TrainEval:
         self.policy = MultiAgentPolicyManager(marl_agents,
                                          wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
+        # does not work with delayed rewards, see https://github.com/thu-ml/tianshou/issues/399
+        # self.buffer = PrioritizedVectorReplayBuffer(
+        #     total_size=buffer_size,
+        #     buffer_num=len(self.venv),
+        #     ignore_obs_next=False,  # enable for framestacking
+        #     save_only_last_obs=False,  # enable for framestacking
+        #     stack_num=self.rl_config.obs_stack,
+        #     alpha=self.rl_config.alpha,
+        #     beta=self.rl_config.beta,
+        #     weight_norm=self.rl_config.weight_norm
+        # )
+        self.buffer = VectorReplayBuffer(buffer_size, num_envs)
 
-        self.buffer = PrioritizedVectorReplayBuffer(
-            total_size=buffer_size,
-            buffer_num=len(self.venv),
-            ignore_obs_next=False,  # enable for framestacking
-            save_only_last_obs=False,  # enable for framestacking
-            stack_num=self.rl_config.obs_stack,
-            alpha=self.rl_config.alpha,
-            beta=self.rl_config.beta,
-            weight_norm=self.rl_config.weight_norm
-        )
         self.train_collector = Collector(self.policy, self.venv, self.buffer, exploration_noise=True)
         self.test_collector = Collector(self.policy, self.venv, exploration_noise=True)
 
