@@ -90,22 +90,22 @@ def test_pettingzoo_env_final_step_reveals_cards_to_all_players_large():
     assert not np.array_equal(get_cards(obs1), get_cards(obs2))
     assert not np.array_equal(get_cards(obs2), get_cards(obs3))
     # Game is over, observation 3,4 are both for last player
-    # assert np.array_equal(get_cards(obs3), get_cards(obs4))
+    assert np.array_equal(get_cards(obs3), get_cards(obs4))
 
     # make sure player 0 can see correct card order after game
     final_UTG = wrapped_env.env.observe(agent_names[3])['observation']
-    #assert np.array_equal(get_cards(final_UTG), get_cards(obs0))
+    assert np.array_equal(get_cards(final_UTG), get_cards(obs0))
 
     # ... player 1 ...
     final_BTN = wrapped_env.env.observe(agent_names[0])['observation']
-    #assert np.array_equal(get_cards(final_BTN), get_cards(obs1))
+    assert np.array_equal(get_cards(final_BTN), get_cards(obs1))
 
     # ... player 2 ...
     final_SB = wrapped_env.env.observe(agent_names[1])['observation']
-    #assert np.array_equal(get_cards(final_SB), get_cards(obs2))
+    assert np.array_equal(get_cards(final_SB), get_cards(obs2))
 
     # ... player 3 ...
     final_BB = wrapped_env.env.observe(agent_names[2])['observation']
-    #assert np.array_equal(get_cards(final_BB), get_cards(obs3))
+    assert np.array_equal(get_cards(final_BB), get_cards(obs3))
     a = 1
     assert True
