@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from prl.baselines.agents.tianshou_agents import TianshouRandomAgent, \
     TianshouAlwaysFoldAgentDummy, \
-    TianshouCallingStation, OracleAgent
+    TianshouCallingStation, OracleAgent, TianshouALLInAgent
 from prl.baselines.agents.tianshou_policies import get_rainbow_config
 from prl.baselines.examples.examples_tianshou_env import make_vectorized_pettingzoo_env
 from prl.environment.Wrappers.vectorizer import AgentObservationType
@@ -98,6 +98,7 @@ class RegisteredAgent:
     rainbow_learner = RainbowPolicy
     oracle = OracleAgent
     random_agent = TianshouRandomAgent
+    always_all_in = TianshouALLInAgent
     calling_station = TianshouCallingStation
     always_fold = TianshouAlwaysFoldAgentDummy
 
@@ -142,6 +143,8 @@ class RegisteredAgent:
             return TianshouCallingStation(), {}
         elif name.lower() == 'always_fold':
             return TianshouAlwaysFoldAgentDummy(), {}
+        elif name.lower() == 'always_all_in':
+            return TianshouALLInAgent(), {}
         else:
             raise NotImplementedError("Agent not registered in class: RegisterdAgent")
 
@@ -219,13 +222,13 @@ class TrainEval:
         # obs0 = env.reset(config=None)
         num_envs = self.config.num_parallel_envs
         mc_model_ckpt_path = "/home/hellovertex/Documents/github.com/prl_baselines/data/01_raw/0.25-0.50/ckpt/ckpt.pt"
-        venv, wrapped_env = make_vectorized_pettingzoo_env(
+        self.venv, wrapped_env = make_vectorized_pettingzoo_env(
             num_envs=num_envs,
             single_env_config=env_config,
             agent_names=agents,
             mc_model_ckpt_path=mc_model_ckpt_path,
             debug_reset_config_state_dict=self._debug_reset_config_state_dict)
-        reward_stats = Reward()
+        self.reward_stats = Reward()
         rainbow_config = RainbowConfig(**{'device': self.rl_config.device,
                                           'load_from_ckpt': ckpt_save_path,
                                           'lr': 1e-6,
@@ -244,13 +247,13 @@ class TrainEval:
         marl_agents, rainbow_config = self.get_agent_list(agent_names=self.config.agents,
                                                           rainbow_config=rainbow_config,
                                                           oracle_config=oracle_config)
-        policy = MultiAgentPolicyManager(marl_agents,
+        self.policy = MultiAgentPolicyManager(marl_agents,
                                          wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
 
-        buffer = PrioritizedVectorReplayBuffer(
+        self.buffer = PrioritizedVectorReplayBuffer(
             total_size=buffer_size,
-            buffer_num=len(venv),
+            buffer_num=len(self.venv),
             ignore_obs_next=False,  # enable for framestacking
             save_only_last_obs=False,  # enable for framestacking
             stack_num=self.rl_config.obs_stack,
@@ -258,36 +261,40 @@ class TrainEval:
             beta=self.rl_config.beta,
             weight_norm=self.rl_config.weight_norm
         )
-        train_collector = Collector(policy, venv, buffer, exploration_noise=True)
-        test_collector = Collector(policy, venv, exploration_noise=True)
+        self.train_collector = Collector(self.policy, self.venv, self.buffer, exploration_noise=True)
+        self.test_collector = Collector(self.policy, self.venv, exploration_noise=True)
 
         def train_fn(epoch, env_step, beta=self.rl_config.beta):
-            # linear decay in the first 10M steps
-            if env_step <= self.rl_config.eps_decay_in_first_n_steps:
-                eps = self.rl_config.eps_train - env_step / self.rl_config.eps_decay_in_first_n_steps * \
-                      (self.rl_config.eps_train - self.rl_config.eps_train_final)
-            else:
-                eps = self.rl_config.eps_train_final
-            for aid in learning_agent_ids:
-                policy.policies[agents[aid]].set_eps(eps)
-            if env_step % 1000 == 0:
-                logger.write("train/env_step", env_step, {"train/eps": eps})
-                logger.write("train/accumulated_reward", env_step,
-                             {"train/accumulated_reward": reward_stats.cumulated})
-            if not self.rl_config.no_priority:
-                if env_step <= self.rl_config.beta_anneal_step:
-                    beta = beta - env_step / self.rl_config.beta_anneal_step * \
-                           (beta - self.rl_config.beta_final)
+            try:
+                # linear decay in the first 10M steps
+                if env_step <= self.rl_config.eps_decay_in_first_n_steps:
+                    eps = self.rl_config.eps_train - env_step / self.rl_config.eps_decay_in_first_n_steps * \
+                          (self.rl_config.eps_train - self.rl_config.eps_train_final)
                 else:
-                    beta = self.rl_config.beta_final
-                buffer.set_beta(beta)
+                    eps = self.rl_config.eps_train_final
+                for aid in learning_agent_ids:
+                    self.policy.policies[agents[aid]].set_eps(eps)
                 if env_step % 1000 == 0:
-                    logger.write("train/env_step", env_step, {"train/beta": beta})
-
+                    logger.write("train/env_step", env_step, {"train/eps": eps})
+                    logger.write("train/accumulated_reward", env_step,
+                                 {"train/accumulated_reward": self.reward_stats.cumulated})
+                if not self.rl_config.no_priority:
+                    if env_step <= self.rl_config.beta_anneal_step:
+                        beta = beta - env_step / self.rl_config.beta_anneal_step * \
+                               (beta - self.rl_config.beta_final)
+                    else:
+                        beta = self.rl_config.beta_final
+                    self.buffer.set_beta(beta)
+                    if env_step % 1000 == 0:
+                        logger.write("train/env_step", env_step, {"train/beta": beta})
+            except Exception:
+                pass
         def test_fn(epoch, env_step):
-            for aid in learning_agent_ids:
-                policy.policies[agents[aid]].set_eps(self.rl_config.eps_test)
-
+            try:
+                for aid in learning_agent_ids:
+                    self.policy.policies[agents[aid]].set_eps(self.rl_config.eps_test)
+            except Exception:
+                pass
         def save_best_fn(policy):
             for aid in learning_agent_ids:
                 model_save_path = os.path.join(
@@ -304,12 +311,12 @@ class TrainEval:
             # The reward at index 0 is the reward relative to observer
             rew = np.mean(rews[:, learning_agent_ids[0]])
             try:
-                reward_stats.cumulated += rew
+                self.reward_stats.cumulated += rew
             except OverflowError:
                 # seems like we are rich
                 pass
-            if rew > reward_stats.best_reward:
-                reward_stats.best_reward = rew
+            if rew > self.reward_stats.best_reward:
+                self.reward_stats.best_reward = rew
             return rew
 
         log_path = os.path.join(*logdir)
@@ -324,7 +331,7 @@ class TrainEval:
             # assume learning agent is at index 0
             torch.save({
                 'epoch': epoch,
-                'net': policy.state_dict(),
+                'net': self.policy.state_dict(),
                 'model': rainbow_config['model'].state_dict(),
                 'env_step': env_step,
                 'optim': rainbow_config['optim'].state_dict(),
@@ -332,11 +339,11 @@ class TrainEval:
             return ckpt_save_path
 
         # test train_collector and start filling replay buffer
-        train_collector.collect(
+        self.train_collector.collect(
             n_step=self.rl_config.batch_size * num_envs)  # todo rl_config.batch_size overwritten?
-        trainer = OffpolicyTrainer(policy=policy,
-                                   train_collector=train_collector,
-                                   test_collector=test_collector,
+        trainer = OffpolicyTrainer(policy=self.policy,
+                                   train_collector=self.train_collector,
+                                   test_collector=self.test_collector,
                                    max_epoch=self.rl_config.epoch,
                                    # set stop_fn for early stopping
                                    step_per_epoch=self.rl_config.step_per_epoch,
@@ -367,7 +374,7 @@ class TrainEval:
         print(f'took {time.time() - t0} seconds')
         # pprint.pprint(result)
         # watch()
-        return reward_stats.best_reward
+        return self.reward_stats.best_reward
 
     def run(self, versus_agent_cls=None):
         """

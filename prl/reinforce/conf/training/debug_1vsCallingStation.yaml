@@ -13,11 +13,13 @@ env_config:
 # possible agents (up to 6):
 # rainbow_learner, oracle, random_agent, calling_station, always_fold
 agents:
-  - rainbow_learner
-  - calling_station
+  - always_all_in
+  #- rainbow_learner
+  #- calling_station
+  - always_fold
 learning_agent_ids:
   - 0
-num_parallel_envs: 31
+num_parallel_envs: 1
 experiment_name: debug_1vs_caller
 logdir_subdirs:
   - .

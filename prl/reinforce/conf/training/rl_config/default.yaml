@@ -1,6 +1,6 @@
 device: 'cuda'
 buffer_sizes:
-  - 100_000
+  - 50_000
   - 10_000
 # learning step = 1/(update_per_step * step_per_collect) env steps
 target_update_freqs:
@@ -16,7 +16,7 @@ beta_anneal_step: 5000000
 weight_norm: True
 epoch: 5_000
 step_per_epoch: 20_000
-step_per_collect: 100
+step_per_collect: 2000
 episode_per_test: 200
 n_step_lookahead: 1
 batch_size: 256
