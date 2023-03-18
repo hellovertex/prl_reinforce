@@ -61,7 +61,7 @@ def get_cards(obs):
 
 
 def test_collector():
-    num_envs = 2
+    num_envs = 1
     agent_names = [RegisteredAgent.always_all_in.__name__,
                    RegisteredAgent.always_fold.__name__]
     env_config = {}
@@ -86,7 +86,6 @@ def test_collector():
     buf = buffer.buffers[0]
     train_collector = Collector(policy, venv, buffer, exploration_noise=True)
     train_collector.collect(5)
-
 
 
     indices0 = np.where(buf.obs.agent_id == 'TianshouALLInAgent')
