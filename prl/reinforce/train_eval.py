@@ -244,7 +244,7 @@ class TrainEval:
                                                           rainbow_config=rainbow_config,
                                                           oracle_config=oracle_config)
         self.policy = MultiAgentPolicyManager(marl_agents,
-                                         wrapped_env)  # policy is made from PettingZooEnv
+                                              wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
         # does not work with delayed rewards, see https://github.com/thu-ml/tianshou/issues/399
         # self.buffer = PrioritizedVectorReplayBuffer(
@@ -287,12 +287,14 @@ class TrainEval:
                         logger.write("train/env_step", env_step, {"train/beta": beta})
             except Exception:
                 pass
+
         def test_fn(epoch, env_step):
             try:
                 for aid in learning_agent_ids:
                     self.policy.policies[agents[aid]].set_eps(self.rl_config.eps_test)
             except Exception:
                 pass
+
         def save_best_fn(policy):
             for aid in learning_agent_ids:
                 model_save_path = os.path.join(
@@ -302,8 +304,13 @@ class TrainEval:
                     policy.policies[agents[aid]].state_dict(), model_save_path
                 )
 
+        self.early_stopping_window = 0
+        self.n_early_stopping_crit = 10
         def stop_fn(mean_rewards):
-            return mean_rewards >= win_rate_early_stopping
+            if mean_rewards >= win_rate_early_stopping:
+                self.early_stopping_window += 1
+
+            return self.early_stopping_window >= self.n_early_stopping_crit
 
         def reward_metric(rews):
             # The reward at index 0 is the reward relative to observer
@@ -355,7 +362,7 @@ class TrainEval:
                                    # fraction of steps_per_collect
                                    train_fn=train_fn,
                                    test_fn=test_fn,
-                                   stop_fn=stop_fn,  # early stopping
+                                   stop_fn=None, #stop_fn,  # early stopping
                                    save_best_fn=save_best_fn,
                                    save_checkpoint_fn=save_checkpoint_fn,
                                    resume_from_log=self.rl_config.load_ckpt,
