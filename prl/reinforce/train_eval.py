@@ -121,7 +121,6 @@ class RegisteredAgent:
                       # training steps
                       }
             rainbow_config = get_rainbow_config(params)
-            rainbow_policy = RainbowPolicy(**rainbow_config)
             rainbow = RainbowPolicy(**rainbow_config)
             return rainbow, rainbow_config
         elif name.lower() == 'oracle':
