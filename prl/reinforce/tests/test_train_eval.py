@@ -1,6 +1,8 @@
 import pytest
-from prl.baselines.agents.dummy_agents import DummyAgentFold, DummyAgentCall, DummyAgentAllIn
-from prl.baselines.agents.tianshou_agents import TianshouCallingStation, TianshouAlwaysFoldAgentDummy, \
+from prl.baselines.agents.dummy_agents import DummyAgentFold, DummyAgentCall, \
+    DummyAgentAllIn
+from prl.baselines.agents.tianshou_agents import TianshouCallingStation, \
+    TianshouAlwaysFoldAgentDummy, \
     TianshouALLInAgent
 from prl.baselines.evaluation.utils import get_reset_config
 from tianshou.data import VectorReplayBuffer, Collector
@@ -43,10 +45,12 @@ def test_train_eval_rewards_are_correct(train_eval_runner):
     #     DummyAgentFold,
     #     DummyAgentCall
     # ]
-    train_eval_runner.debug_reset_config_state_dict = get_reset_config(player_hands, board)
+    train_eval_runner.debug_reset_config_state_dict = get_reset_config(player_hands,
+                                                                       board)
     # set breakpoints inside run and see if everything behaves as expected
     # train_eval_runner.run(versus_agent_cls=DummyAgentFold)
     train_eval_runner.run(versus_agent_cls=TianshouAlwaysFoldAgentDummy)
+
 
 def get_cards(obs):
     one_hot_card_bit_range = slice(
@@ -55,8 +59,9 @@ def get_cards(obs):
     # observer cards are always at position 0
     return np.where(obs[one_hot_card_bit_range] == 1)
 
-def test_pettingzoo():
-    num_envs = 1
+
+def test_collector():
+    num_envs = 2
     agent_names = [RegisteredAgent.always_all_in.__name__,
                    RegisteredAgent.always_fold.__name__]
     env_config = {}
@@ -80,7 +85,10 @@ def test_pettingzoo():
     buffer = VectorReplayBuffer(total_size=10, buffer_num=num_envs)
     buf = buffer.buffers[0]
     train_collector = Collector(policy, venv, buffer, exploration_noise=True)
-    train_collector.collect(2)
+    train_collector.collect(5)
+
+
+
     indices0 = np.where(buf.obs.agent_id == 'TianshouALLInAgent')
     indices1 = np.where(buf.obs.agent_id == 'TianshouAlwaysFoldAgentDummy')
     obs0 = buf.obs.obs[indices0]

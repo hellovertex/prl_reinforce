@@ -9,9 +9,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import gym
-# todo: implement RL trainer vs Random agent
-#  what do we need in terms of experimental evaluation (tables, mbb charts)
-#  what do we need in terms of reproducability?
 import hydra
 import numpy as np
 import torch
