@@ -38,7 +38,7 @@ class TrainRunner:
         import gc
         import psutil
         # how many steps
-        for i in range(100000000):
+        for i in range(1000000):
             results = algo.train()
             if psutil.virtual_memory().percent >= 50:
                 gc.collect()

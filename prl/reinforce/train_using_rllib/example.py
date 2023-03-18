@@ -2,9 +2,11 @@ import os
 from typing import Type
 
 import gin
+import hydra
 import ray.rllib.algorithms.registry
-from prl.baselines.agents.policies import StakeLevelImitationPolicy
+from prl.baselines.agents.rllib_policies import AlwaysCallingPolicy
 from prl.environment.Wrappers.augment import AugmentObservationWrapper
+from prl.environment.Wrappers.vectorizer import AgentObservationType
 from prl.environment.multi_agent.utils import make_multi_agent_env
 from ray.rllib import MultiAgentEnv
 from ray.rllib.algorithms.apex_dqn import ApexDQN, ApexDQNConfig
@@ -12,12 +14,12 @@ from ray.rllib.algorithms.simple_q import SimpleQ, SimpleQConfig
 from ray.rllib.models import MODEL_DEFAULTS
 from ray.rllib.policy.policy import PolicySpec
 
-from prl.reinforce.agents.our_models import TrainableModelType, CustomTorchModel
-from prl.reinforce.agents.rainbow import make_rainbow_config
+from prl.reinforce.train_using_rllib.agents.our_models import TrainableModelType, CustomTorchModel
+from prl.reinforce.train_using_rllib.agents.rainbow import make_rainbow_config
 from prl.reinforce.train_using_rllib.prl_callbacks.our_callbacks import PRLToRllibCallbacks
 
 RAINBOW_POLICY = "ApexDQN"
-BASELINE_POLICY = "StakeImitation"
+BASELINE_POLICY = "AlwaysCallingPolicy"
 
 from prl.reinforce.train_using_rllib.runner import TrainRunner
 
@@ -43,7 +45,6 @@ def policy_selector(agent_id, episode, **kwargs):
         return RAINBOW_POLICY
 
 
-@gin.configurable
 def run(algo_class=ApexDQN,
         prl_baseline_model_ckpt_path="",
         min_sample_timesteps_per_iteration=100,
@@ -63,21 +64,22 @@ def run(algo_class=ApexDQN,
                   'n_players': 2,
                   'starting_stack_size': 1000,
                   'blinds': [25, 50],
-                  'mask_legal_moves': True}
+                  'mask_legal_moves': True,
+                  'agent_observation_mode': AgentObservationType.SEER}
     env_cls: Type[MultiAgentEnv] = make_multi_agent_env(env_config)
     policies = {RAINBOW_POLICY: PolicySpec(),  # empty defaults to agent_class policy --> RAINBOW
-                BASELINE_POLICY: PolicySpec(policy_class=StakeLevelImitationPolicy,
-                                            config={'path_to_torch_model_state_dict': os.environ['PRL_BASELINE_MODEL_PATH']}),
-            }
+                BASELINE_POLICY: PolicySpec(policy_class=AlwaysCallingPolicy,
+                                            config={}),
+                }
     # observation_space = env_cls(None).observation_space['obs']
     replay_buffer_config = {**algo_class.get_default_config()["replay_buffer_config"],
-                                               "capacity": replay_buffer_capacity}
+                            "capacity": replay_buffer_capacity}
     conf = ApexDQNConfig()
     conf = conf.environment(env=env_cls)
     conf = conf.training(gamma=0.9,
                          replay_buffer_config=algo_class.get_default_config(),  # replay_buffer_config,
                          )
-    conf = conf.resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")),)
+    conf = conf.resources(num_gpus=1, )
     conf = conf.rollouts(num_rollout_workers=os.cpu_count(),
                          # # use num_envs_per_woker > 1 with remote_worker_envs
                          # # to spawn envs in new processes. causes significant
@@ -88,7 +90,7 @@ def run(algo_class=ApexDQN,
                          horizon=max_iter_per_episode,
                          )
     conf = conf.evaluation(evaluation_interval=10)
-    conf = conf.debugging(log_level="INFO",log_sys_usage=True)
+    conf = conf.debugging(log_level="INFO", log_sys_usage=True)
     # conf = conf.reporting(min_sample_timesteps_per_iteration=min_sample_timesteps_per_iteration,
     #                       )
     conf = conf.callbacks(PRLToRllibCallbacks)
@@ -104,10 +106,15 @@ def run(algo_class=ApexDQN,
 
     results = TrainRunner().run(algo_class,
                                 algo_config,
-                                os.environ['ALGO_CKPT_DIR'],
+                                './tmp',
                                 ckpt_interval)
 
 
-if __name__ == '__main__':
-    gin.parse_config_file('./gin_configs/config_example.gin')
+@hydra.main(version_base=None, config_path="conf", config_name='config')
+def main(cfg):
+    # conf = TrainConfig(**cfg.training)
     run()
+
+
+if __name__ == '__main__':
+    main()

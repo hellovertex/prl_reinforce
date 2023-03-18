@@ -4,9 +4,9 @@ buffer_sizes:
   - 10_000
 # learning step = 1/(update_per_step * step_per_collect) env steps
 target_update_freqs:
-  - 500
-  - 1000
   - 5000
+  - 10000
+  - 50000
 dir_suffix: str
 obs_stack: 1
 alpha: 0.5
