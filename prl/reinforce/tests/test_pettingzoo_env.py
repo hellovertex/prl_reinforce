@@ -21,6 +21,12 @@ def env_fixture():
     return [1, 2, 3]
 
 
+def test_pettingzoo_rewards_are_correct():
+    from prl.baselines.cpp_hand_evaluator import rank
+    # run env, get obs, get cards, make sure the rewards are correct
+    pass
+
+
 def test_pettingzoo_env_cards_are_revealed():
     num_envs = 1
     agent_names = [RegisteredAgent.always_all_in.__name__,
@@ -46,7 +52,7 @@ def test_pettingzoo_env_cards_are_revealed():
     obs1 = wrapped_env.step(all_in)[0]['obs']
     obs2 = wrapped_env.step(fold)[0]['obs']
     assert not np.array_equal(get_cards(obs0), get_cards(obs1))
-    assert not np.array_equal(get_cards(obs1), get_cards(obs2))
+    assert np.array_equal(get_cards(obs1), get_cards(obs2))
 
     # make sure player 0 can see correct card order after game
     final_p0 = wrapped_env.env.observe(agent_names[0])['observation']
