@@ -22,6 +22,7 @@ from tianshou.data import Collector, PrioritizedVectorReplayBuffer, VectorReplay
 from tianshou.policy import RainbowPolicy, MultiAgentPolicyManager, PPOPolicy
 from tianshou.trainer import OffpolicyTrainer
 from tianshou.utils import TensorboardLogger
+from tianshou.utils.net.common import MLP
 from torch.utils.tensorboard import SummaryWriter
 
 from prl.reinforce.agents.rainbow import Rainbow
@@ -91,6 +92,20 @@ class OracleAgentConfig:
     action_space: Optional[gym.Space] = None
     flatten_input: bool = False
 
+def load_model(ckpt_path=None, flatten_input=False, device='cpu'):
+    input_dim = 569
+    output_dim = 1
+    hidden_dims = [256]
+    model = MLP(input_dim,
+                output_dim,
+                hidden_dims,
+                flatten_input=flatten_input).to(device)
+    if ckpt_path:
+        ckpt = torch.load(ckpt_path,
+                          map_location=device)
+        model.load_state_dict(ckpt['net'])
+    model.eval()
+    return model
 
 class RegisteredAgent:
     # todo make rainbow learner configurable
@@ -124,6 +139,10 @@ class RegisteredAgent:
                       }
             rainbow_config = get_rainbow_config(params)
             rainbow = Rainbow(**rainbow_config)
+            # todo: insert monkey patched card strength model here
+            ckpt_path = '/home/hellovertex/Documents/github.com/prl_baselines/prl/baselines/win_prob_predition/ckpt/ckpt.pt'
+            mc_model = load_model(ckpt_path=ckpt_path)
+            rainbow.mc_model = mc_model
             return rainbow, rainbow_config
         elif name.lower() == 'oracle':
             return OracleAgent(

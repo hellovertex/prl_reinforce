@@ -4,27 +4,23 @@ defaults:
   - _self_  # relative position of_this_ config file in the defaults list
 # overwrites
 rl_config:
-  batch_size: 512
+  batch_size: 2048
+  epoch: 100000
 env_config:
   agent_observation_mode: AgentObservationType.SEER
 # CONFIG VALUES
 experiment_name: self_play_oracle_training
+oracle_ckpt_dir: /home/hellovertex/Documents/github.com/prl_reinforce/prl/reinforce/v6/self_play_oracle_training/_buffer=50000/_freq=5000/ckpt.pt
 agents:
   - rainbow_learner
-  - rainbow_learner
-  - rainbow_learner
-  - rainbow_learner
-  - rainbow_learner
-  - rainbow_learner
+  - oracle
+  - oracle
+  - oracle
+  - random_agent
+  - random_agent
 learning_agent_ids:
   - 0
-  - 1
-  - 2
-  - 3
-  - 4
-  - 5
 num_parallel_envs: 1
 logdir_subdirs:
   - .
-  - v5
-  - self_play_oracle_training
+  - rl_vs_oracle_vs_random
