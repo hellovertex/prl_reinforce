@@ -19,10 +19,12 @@ from prl.baselines.agents.tianshou_policies import get_rainbow_config
 from prl.baselines.examples.examples_tianshou_env import make_vectorized_pettingzoo_env
 from prl.environment.Wrappers.vectorizer import AgentObservationType
 from tianshou.data import Collector, PrioritizedVectorReplayBuffer, VectorReplayBuffer
-from tianshou.policy import RainbowPolicy, MultiAgentPolicyManager
+from tianshou.policy import RainbowPolicy, MultiAgentPolicyManager, PPOPolicy
 from tianshou.trainer import OffpolicyTrainer
 from tianshou.utils import TensorboardLogger
 from torch.utils.tensorboard import SummaryWriter
+
+from prl.reinforce.agents.rainbow import Rainbow
 
 
 class Reward:
@@ -121,7 +123,7 @@ class RegisteredAgent:
                       # training steps
                       }
             rainbow_config = get_rainbow_config(params)
-            rainbow = RainbowPolicy(**rainbow_config)
+            rainbow = Rainbow(**rainbow_config)
             return rainbow, rainbow_config
         elif name.lower() == 'oracle':
             return OracleAgent(
@@ -154,6 +156,7 @@ class TrainConfig:
     env_config: EnvConfig
     agents: List[RegisteredAgent]
     learning_agent_ids: List[int]
+    oracle_ckpt_dir: Optional[str] = None
 
 
 # @dataclass
@@ -181,19 +184,25 @@ class TrainEval:
         self._debug_reset_config_state_dict = val
 
     @staticmethod
-    def get_agent_list(agent_names, rainbow_config, oracle_config):
+    def get_agent_list(agent_names,
+                       rainbow_config,
+                       oracle_config,
+                       self_play=False):
         marl_agents = {}
         learner_config = {}
         for name in agent_names:
             if name not in marl_agents:
-                marl_agents[name], conf = RegisteredAgent.build_agent_instance(name,
-                                                                               rainbow_config,
-                                                                               oracle_config)
+                agent = RegisteredAgent.build_agent_instance(name, rainbow_config, oracle_config)
+                marl_agents[name], conf = agent
                 if name == 'rainbow_learner':
                     learner_config = conf
+                    # this is monkey patched and needs some care later
+                    if self_play:
+                        return [agent[0] for _ in range(len(agent_names))], learner_config
         agents = []
         for name in agent_names:
             agents.append(marl_agents[name])
+
         return agents, learner_config
 
     def _run(self,
@@ -217,7 +226,7 @@ class TrainEval:
         # env = init_wrapped_env(**env_config)
         # obs0 = env.reset(config=None)
         num_envs = self.config.num_parallel_envs
-        mc_model_ckpt_path = "/home/hellovertex/Documents/github.com/prl_baselines/data/01_raw/0.25-0.50/ckpt/ckpt.pt"
+        mc_model_ckpt_path = self.config.oracle_ckpt_dir
         self.venv, wrapped_env = make_vectorized_pettingzoo_env(
             num_envs=num_envs,
             single_env_config=env_config,
@@ -242,7 +251,8 @@ class TrainEval:
                                              'model_hidden_dims': (512,)})
         marl_agents, rainbow_config = self.get_agent_list(agent_names=self.config.agents,
                                                           rainbow_config=rainbow_config,
-                                                          oracle_config=oracle_config)
+                                                          oracle_config=oracle_config,
+                                                          self_play=True)
         self.policy = MultiAgentPolicyManager(marl_agents,
                                               wrapped_env)  # policy is made from PettingZooEnv
         # policy = RainbowPolicy(**rainbow_config)
@@ -260,7 +270,7 @@ class TrainEval:
         self.buffer = VectorReplayBuffer(buffer_size, num_envs)
 
         self.train_collector = Collector(self.policy, self.venv, self.buffer, exploration_noise=True)
-        self.test_collector = Collector(self.policy, self.venv, exploration_noise=True)
+        self.test_collector = Collector(self.policy, self.venv, exploration_noise=False)
 
         def train_fn(epoch, env_step, beta=self.rl_config.beta):
             try:
@@ -306,6 +316,7 @@ class TrainEval:
 
         self.early_stopping_window = 0
         self.n_early_stopping_crit = 10
+
         def stop_fn(mean_rewards):
             if mean_rewards >= win_rate_early_stopping:
                 self.early_stopping_window += 1
@@ -362,7 +373,7 @@ class TrainEval:
                                    # fraction of steps_per_collect
                                    train_fn=train_fn,
                                    test_fn=test_fn,
-                                   stop_fn=None, #stop_fn,  # early stopping
+                                   stop_fn=None,  # stop_fn,  # early stopping
                                    save_best_fn=save_best_fn,
                                    save_checkpoint_fn=save_checkpoint_fn,
                                    resume_from_log=self.rl_config.load_ckpt,
