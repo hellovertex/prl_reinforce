@@ -127,6 +127,10 @@ def cards_match(s, s_):
 
 
 def apply_strategy(strategy, state):
+    # get player who has to act
+    first_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+    second_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+    third_move_is_done = bool(s[S.action_0_R + S.action_0_L])
     prob_l = 0
     prob_r = 1
     return prob_l, prob_r
