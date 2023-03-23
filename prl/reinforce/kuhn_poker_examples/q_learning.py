@@ -122,6 +122,52 @@ class PlayerStrategy(IntEnum):
     K_R1 = 11
 
 
+def cards_match(s, s_):
+    return np.array_equal(s[:len(Card) * len(Players)], s_[:len(Card) * len(Players)])
+
+
+def apply_strategy(strategy, state):
+    prob_l = 0
+    prob_r = 1
+    return prob_l, prob_r
+
+
+def apply_action(state, action):
+    next_state = state
+    return next_state
+
+
+def t(a, s_, hero_strategy, villain_strategy) -> float:
+    # check if s_ is reachable from s given action a
+    next_state = apply_action(s, a)
+    if not np.array_equal(next_state):
+        return 0
+    # if not cards_match(s, s_):
+    #     return 0
+
+    # get player who has to act
+    first_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+    second_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+    third_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+
+    if first_move_is_done:
+        if second_move_is_done:
+            if third_move_is_done:
+                return 0
+            else:
+                # apply hero second move get [prob(L), prob(R)]
+                probs = apply_strategy(hero_strategy, state)
+                return probs[a]
+        else:
+            # apply villan first move get [prob(L), prob(R)]
+            # compute each succ state and if one matches s_ return that prob
+            pass
+    else:
+        # apply hero first move get [prob(L), prob(R)]
+        # compute each succ state and if one matches s_ return that prob
+        pass
+
+
 class KuhnPokerEnvironment:
     """This class provides an interface for an agent to interact with
     the underlying MDP of Kuhn Poker"""
@@ -171,30 +217,6 @@ class KuhnPokerEnvironment:
             return False
         # action must
         pass
-
-    def t(self, s, a, s_, hero_strategy, villain_strategy) -> float:
-        if not self.cards_match(s, s_):
-            return 0
-        first_move_is_done = bool(s[S.action_0_R + S.action_0_L])
-        second_move_is_done = bool(s[S.action_0_R + S.action_0_L])
-        third_move_is_done = bool(s[S.action_0_R + S.action_0_L])
-
-        if first_move_is_done:
-            if second_move_is_done:
-                if third_move_is_done:
-                    return 0
-                else:
-                    # apply hero second move get [prob(L), prob(R)]
-                    # compute each succ state and if one matches s_ return that prob
-                    pass
-            else:
-                # apply villan first move get [prob(L), prob(R)]
-                # compute each succ state and if one matches s_ return that prob
-                pass
-        else:
-            # apply hero first move get [prob(L), prob(R)]
-            # compute each succ state and if one matches s_ return that prob
-            pass
 
     def r(self, s, a, s_):
         pass
