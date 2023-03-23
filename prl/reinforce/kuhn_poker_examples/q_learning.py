@@ -128,48 +128,68 @@ def cards_match(s, s_):
 
 def apply_strategy(strategy, state):
     # get player who has to act
-    first_move_is_done = bool(s[S.action_0_R + S.action_0_L])
-    second_move_is_done = bool(s[S.action_0_R + S.action_0_L])
-    third_move_is_done = bool(s[S.action_0_R + S.action_0_L])
-    prob_l = 0
-    prob_r = 1
+    first_move_is_done = s[S.action_0_R + S.action_0_L]
+    second_move_is_done = s[S.action_1_R + S.action_1_L]
+    if bool(first_move_is_done):
+        # villain moves
+        card = np.where(state[State.p1_has_J:State.p1_has_K + 1] == 1)[0]
+        first_move = np.where(state[State.action_0_L:State.action_0_R + 1] == 1)[0]
+        prob_l = strategy[4 * card + 2 * first_move]
+        prob_r = strategy[4 * card + 2 * first_move + 1]
+    else:
+        card = np.where(state[State.p0_has_J:State.p0_has_K + 1] == 1)[0]
+        # hero moves
+        prob_l = strategy[4 * card + 2 * second_move_is_done]
+        prob_r = strategy[4 * card + 2 * second_move_is_done + 1]
     return prob_l, prob_r
 
 
 def apply_action(state, action):
     next_state = state
+    first_move_is_done = state[S.action_0_R + S.action_0_L]
+    second_move_is_done = state[S.action_1_R + S.action_1_L]
+    third_move_is_done = state[S.action_2_R + S.action_2_L]
+    if bool(third_move_is_done):
+        return np.zeros_like(state)
+    if not first_move_is_done:
+        next_state[S.action_0_L + action] = 1
+    elif first_move_is_done:
+        next_state[S.action_1_L + action] = 1
+    elif second_move_is_done:
+        next_state[S.action_2_L + action] = 1
+    else:
+        raise ValueError(f"Edge case encountered when trying to step "
+                         f"state={state} with action={action}")
     return next_state
 
 
 def t(a, s_, hero_strategy, villain_strategy) -> float:
     # check if s_ is reachable from s given action a
     next_state = apply_action(s, a)
-    if not np.array_equal(next_state):
+    if not np.array_equal(next_state, s_):
         return 0
-    # if not cards_match(s, s_):
-    #     return 0
 
     # get player who has to act
     first_move_is_done = bool(s[S.action_0_R + S.action_0_L])
     second_move_is_done = bool(s[S.action_0_R + S.action_0_L])
     third_move_is_done = bool(s[S.action_0_R + S.action_0_L])
-
+    if third_move_is_done:
+        return 0
     if first_move_is_done:
         if second_move_is_done:
-            if third_move_is_done:
-                return 0
-            else:
-                # apply hero second move get [prob(L), prob(R)]
-                probs = apply_strategy(hero_strategy, state)
-                return probs[a]
+            # apply hero second move get [prob(L), prob(R)]
+            probs = apply_strategy(hero_strategy, state)
+            return probs[a]
         else:
             # apply villan first move get [prob(L), prob(R)]
             # compute each succ state and if one matches s_ return that prob
-            pass
+            probs = apply_strategy(villain_strategy, state)
+            return probs[a]
     else:
         # apply hero first move get [prob(L), prob(R)]
         # compute each succ state and if one matches s_ return that prob
-        pass
+        probs = apply_strategy(hero_strategy, state)
+        return probs[a]
 
 
 class KuhnPokerEnvironment:
