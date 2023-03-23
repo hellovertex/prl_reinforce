@@ -2,6 +2,8 @@ from enum import auto, IntEnum
 import random
 from typing import List, Dict
 
+import numpy as np
+
 from q_value_iteration import S, N_ACTIONS, N_STATES
 
 
@@ -156,23 +158,43 @@ class KuhnPokerEnvironment:
         self.state = self.vectorize()
         return self.state
 
+    def cards_match(self):
+        pass
+
+    @staticmethod
+    def cards_match(s, s_):
+        return np.array_equal(s[:len(Card) * len(Players)], s_[:len(Card) * len(Players)])
+
+    def state_sprime_is_reachable(self, s, a, s_):
+        # cards must match
+        if not self.cards_match(s, s_):
+            return False
+        # action must
+        pass
+
     def t(self, s, a, s_, hero_strategy, villain_strategy) -> float:
-        if self.state[S.action_0_R + S.action_0_L] == 0:
-            # a is first action
-            new_state = s
-            new_state[State.action_0_L + a] = 1
-            if s_ == new_state:
-                return 1
-            else:
-                return 0
-        elif self.state[S.action_1_R + S.action_1_L] == 0:
-            # a is second action
-            pass
-        elif self.state[S.action_2_R + S.action_2_L] == 0:
-            # a is third action
-            pass
-        else:
+        if not self.cards_match(s, s_):
             return 0
+        first_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+        second_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+        third_move_is_done = bool(s[S.action_0_R + S.action_0_L])
+
+        if first_move_is_done:
+            if second_move_is_done:
+                if third_move_is_done:
+                    return 0
+                else:
+                    # apply hero second move get [prob(L), prob(R)]
+                    # compute each succ state and if one matches s_ return that prob
+                    pass
+            else:
+                # apply villan first move get [prob(L), prob(R)]
+                # compute each succ state and if one matches s_ return that prob
+                pass
+        else:
+            # apply hero first move get [prob(L), prob(R)]
+            # compute each succ state and if one matches s_ return that prob
+            pass
 
     def r(self, s, a, s_):
         pass
