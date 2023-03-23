@@ -171,6 +171,7 @@ def plot_q_values(Q: np.ndarray):
     import seaborn as sns
     import matplotlib.pylab as plt
     plt.style.use("seaborn")
+    plt.set_cmap('viridis')
     states = ['J_Action_1',
               'Q_Action_1',
               'K_Action_1',
