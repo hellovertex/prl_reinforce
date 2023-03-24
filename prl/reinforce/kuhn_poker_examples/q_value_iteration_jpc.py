@@ -6,8 +6,6 @@ from functools import partial
 import numpy as np
 import pandas as pd
 
-from q_value_iteration import plot_q_values
-
 
 class Card(IntEnum):
     J = 0
@@ -166,6 +164,39 @@ class States:
     ]
 
 
+TERMINAL_STATES = [
+    [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+    [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0],
+    [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+    [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0],
+    [1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0],
+    [1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+    [1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+    [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0],
+    [0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0],
+    [0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0],
+    [0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0],
+    [0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+    [0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1],
+    [0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+    [0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0],
+    [0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0],
+    [0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1],
+    [0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0],
+    [0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0],
+    [0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0],
+    [0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+    [0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0],
+    [0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0]
+]
+
 S = State
 N_STATES = 54
 N_ACTIONS = 2
@@ -295,8 +326,22 @@ def t(s, a, s_, hero_strategy, villain_strategy) -> float:
         return probs[a]
 
 
+def is_terminal(state):
+    return False
+
+
 def r(s, a, s_):
-    return 0
+    if np.array_equal(s, s_):
+        return 0
+    if s_ not in TERMINAL_STATES:
+        return 0
+    card = np.where(s_[State.p0_has_J:State.p0_has_K + 1])[0][0]
+    hero_wins = np.where(s_[State.p1_has_J:State.p1_has_K + 1])[0][0] < card
+    if s_[State.action_0_R] and s_[State.action_1_R]:
+        return 2 if hero_wins else -2
+    if s_[State.action_0_L] and s_[State.action_1_R] and s_[State.action_2_R]:
+        return 2 if hero_wins else -2
+    return 1 if hero_wins else -1
 
 
 def Qvalue_iteration(t, r, gamma=0.5, n_iters=10):
@@ -341,8 +386,32 @@ def util_make_states():
         print(f's_{i} = {state}')
 
 
+def util_make_terminal_states():
+    ll = [1, 0, 1, 0, 0, 0]
+    lrl = [1, 0, 0, 1, 1, 0]
+    lrr = [1, 0, 0, 1, 0, 1]
+    rl = [0, 1, 1, 0, 0, 0]
+    rr = [0, 1, 0, 1, 0, 0]
+    cards = []
+    for i in range(len(Card)):
+        for j in range(len(Card)):
+            if i != j:
+                s = [0, 0, 0, 0, 0, 0]
+                s[i] = 1
+                s[j + 3] = 1
+                cards.append(s)
+
+    states = []
+    for s in cards:
+        for p in [ll, lrl, lrr, rl, rr]:
+            states.append(s + p)
+    for i, state in enumerate(states):
+        print(f's_{i} = {state}')
+
+
 if __name__ == '__main__':
     # util_make_states()
+    # util_make_terminal_states()
     hero_strategy = [
         # JACK
         1, 0,  # pass first action with probability 1
@@ -368,5 +437,5 @@ if __name__ == '__main__':
     t_fn = partial(t,
                    hero_strategy=hero_strategy,
                    villain_strategy=villain_strategy)
-    Q = Qvalue_iteration(t_fn, r, 1, n_iters=3)
+    Q = Qvalue_iteration(t_fn, r, 1, n_iters=100)
     print(Q)
