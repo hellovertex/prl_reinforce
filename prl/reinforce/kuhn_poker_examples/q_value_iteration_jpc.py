@@ -223,43 +223,6 @@ def cards_match(s, s_):
     return np.array_equal(s[:len(Card) * len(Players)], s_[:len(Card) * len(Players)])
 
 
-def apply_strategy(strategy, state):
-    # get player who has to act
-    first_move_is_done = state[S.action_0_R] + state[S.action_0_L]
-    second_move_is_done = state[S.action_1_R] + state[S.action_1_L]
-    if bool(first_move_is_done):
-        # villain moves
-        card = np.where(state[State.p1_has_J:State.p1_has_K + 1])[0][0]
-        first_move = np.where(state[State.action_0_L:State.action_0_R + 1])[0][0]
-        prob_l = strategy[4 * card + 2 * first_move]
-        prob_r = strategy[4 * card + 2 * first_move + 1]
-    else:
-        card = np.where(state[State.p0_has_J:State.p0_has_K + 1] == 1)[0]
-        # hero moves
-        prob_l = strategy[4 * card + 2 * second_move_is_done]
-        prob_r = strategy[4 * card + 2 * second_move_is_done + 1]
-    return prob_l, prob_r
-
-
-def apply_action(state, action):
-    next_state = state
-    first_move_is_done = state[S.action_0_R] + state[S.action_0_L]
-    second_move_is_done = state[S.action_1_R] + state[S.action_1_L]
-    third_move_is_done = state[S.action_2_R] + state[S.action_2_L]
-    if bool(third_move_is_done):
-        return np.zeros_like(state)
-    if not first_move_is_done:
-        next_state[S.action_0_L + action] = 1
-    elif first_move_is_done:
-        next_state[S.action_1_L + action] = 1
-    elif second_move_is_done:
-        next_state[S.action_2_L + action] = 1
-    else:
-        raise ValueError(f"Edge case encountered when trying to step "
-                         f"state={state} with action={action}")
-    return next_state
-
-
 def plot_q_values(Q: np.ndarray):
     import seaborn as sns
     import matplotlib.pylab as plt
@@ -295,6 +258,44 @@ def plot_q_values(Q: np.ndarray):
     plt.show()
 
 
+def apply_strategy(strategy, state):
+    # get player who has to act
+    first_move_is_done = state[S.action_0_R] + state[S.action_0_L]
+    second_move_is_done = state[S.action_1_R] + state[S.action_1_L]
+    if bool(first_move_is_done):
+        # villain moves
+        card = np.where(state[State.p1_has_J:State.p1_has_K + 1])[0][0]
+        first_move = np.where(state[State.action_0_L:State.action_0_R + 1])[0][0]
+        prob_l = strategy[4 * card + 2 * first_move]
+        prob_r = strategy[4 * card + 2 * first_move + 1]
+    else:
+        card = np.where(state[State.p0_has_J:State.p0_has_K + 1])[0][0]
+        # hero moves
+        prob_l = strategy[4 * card + 2 * second_move_is_done]
+        prob_r = strategy[4 * card + 2 * second_move_is_done + 1]
+    return prob_l, prob_r
+
+
+def apply_action(state, action):
+    next_state = np.zeros_like(state)
+    next_state[np.where(state)[0]] = 1
+    first_move_is_done = state[S.action_0_R] + state[S.action_0_L]
+    second_move_is_done = state[S.action_1_R] + state[S.action_1_L]
+    third_move_is_done = state[S.action_2_R] + state[S.action_2_L]
+    if bool(third_move_is_done):
+        return np.zeros_like(state)
+    if not first_move_is_done:
+        next_state[S.action_0_L + action] = 1
+    elif first_move_is_done:
+        next_state[S.action_1_L + action] = 1
+    elif second_move_is_done:
+        next_state[S.action_2_L + action] = 1
+    else:
+        raise ValueError(f"Edge case encountered when trying to step "
+                         f"state={state} with action={action}")
+    return next_state
+
+
 def t(s, a, s_, hero_strategy, villain_strategy) -> float:
     # check if s_ is reachable from s given action a
     if s == s_:
@@ -326,10 +327,6 @@ def t(s, a, s_, hero_strategy, villain_strategy) -> float:
         return probs[a]
 
 
-def is_terminal(state):
-    return False
-
-
 def r(s, a, s_):
     if np.array_equal(s, s_):
         return 0
@@ -342,21 +339,6 @@ def r(s, a, s_):
     if s_[State.action_0_L] and s_[State.action_1_R] and s_[State.action_2_R]:
         return 2 if hero_wins else -2
     return 1 if hero_wins else -1
-
-
-def Qvalue_iteration(t, r, gamma=0.5, n_iters=10):
-    Q = np.zeros((N_STATES, N_ACTIONS))
-    for i in range(n_iters):
-        # df = export_q_values(Q, path=f'./exported_q_values_{i}.csv')
-        # print(df.head())
-        for i, s in enumerate(States.as_list):  # for all states s
-            for i, a in enumerate(list(Actions)):  # for all actions a
-                qs = 0
-                for j, s_ in enumerate(States.as_list):  # for all reachable states s'
-                    qs += (t(s, a, s_) * (r(s, a, s_) + gamma * max(Q[j])))
-                Q[i][a] = qs
-    # plot_q_values(Q)
-    return Q
 
 
 def util_make_states():
@@ -409,6 +391,21 @@ def util_make_terminal_states():
         print(f's_{i} = {state}')
 
 
+def Qvalue_iteration(t, r, gamma=0.5, n_iters=10):
+    Q = np.zeros((N_STATES, N_ACTIONS))
+    for i in range(n_iters):
+        # df = export_q_values(Q, path=f'./exported_q_values_{i}.csv')
+        # print(df.head())
+        for i, s in enumerate(States.as_list):  # for all states s
+            for i, a in enumerate(list(Actions)):  # for all actions a
+                qs = 0
+                for j, s_ in enumerate(States.as_list):  # for all reachable states s'
+                    qs += (t(s, a, s_) * (r(s, a, s_) + gamma * max(Q[j])))
+                Q[i][a] = qs
+    # plot_q_values(Q)
+    return Q
+
+
 if __name__ == '__main__':
     # util_make_states()
     # util_make_terminal_states()
@@ -437,5 +434,5 @@ if __name__ == '__main__':
     t_fn = partial(t,
                    hero_strategy=hero_strategy,
                    villain_strategy=villain_strategy)
-    Q = Qvalue_iteration(t_fn, r, 1, n_iters=100)
+    Q = Qvalue_iteration(t_fn, r, 1, n_iters=10)
     print(Q)
