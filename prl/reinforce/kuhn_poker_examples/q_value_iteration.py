@@ -203,7 +203,7 @@ def plot_q_values(Q: np.ndarray):
 
 def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
     Q = np.zeros((N_STATES, N_ACTIONS))
-    for i in range(n_iters):
+    for _ in range(n_iters):
         # df = export_q_values(Q, path=f'./exported_q_values_{i}.csv')
         # print(df.head())
         for s in range(N_STATES):  # for all states s
@@ -217,5 +217,5 @@ def Qvalue_iteration(T, R, gamma=0.5, n_iters=10):
 
 
 if __name__ == "__main__":
-    Q = Qvalue_iteration(T, R, 1, n_iters=3)
+    Q = Qvalue_iteration(T, R, 1, n_iters=10)
     print(Q)

@@ -53,10 +53,10 @@ class States:
         0, 0,  # Player 2 Action L=0, Action R=0
         0, 0  # Player 1 2nd. Action L=0, Action R=0
     ]
-    s_1 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0]
-    s_2 = [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0]
-    s_3 = [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0]
-    s_4 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0]
+    s_1 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0] # 0
+    s_2 = [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0] # 0
+    s_3 = [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0] # 0
+    s_4 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0] # -1, -2
     s_5 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0]
     s_6 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1]
     s_7 = [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0]
@@ -236,7 +236,10 @@ def plot_q_values(Q: np.ndarray):
               'K_Action_2',
               ]
     # plt.figure(figsize=(6,2))
-    df = pd.DataFrame(Q[:6, ].T)  # , columns=state_names[:6])
+
+    # df = pd.DataFrame(Q[:6, ].T)  # , columns=state_names[:6])
+    q = Q[[0, 9, 18, 27, 36, 45]].T
+    df = pd.DataFrame(q)  # , columns=state_names[:6])
     ax = sns.heatmap(df,
                      linewidth=1,
                      annot=True,
@@ -262,7 +265,7 @@ def apply_strategy(strategy, state):
     # get player who has to act
     first_move_is_done = state[S.action_0_R] + state[S.action_0_L]
     second_move_is_done = state[S.action_1_R] + state[S.action_1_L]
-    if bool(first_move_is_done):
+    if bool(first_move_is_done) and not bool(second_move_is_done):
         # villain moves
         card = np.where(state[State.p1_has_J:State.p1_has_K + 1])[0][0]
         first_move = np.where(state[State.action_0_L:State.action_0_R + 1])[0][0]
@@ -286,9 +289,9 @@ def apply_action(state, action):
         return np.zeros_like(state)
     if not first_move_is_done:
         next_state[S.action_0_L + action] = 1
-    elif first_move_is_done:
+    elif not second_move_is_done:
         next_state[S.action_1_L + action] = 1
-    elif second_move_is_done:
+    elif not third_move_is_done:
         next_state[S.action_2_L + action] = 1
     else:
         raise ValueError(f"Edge case encountered when trying to step "
@@ -393,16 +396,23 @@ def util_make_terminal_states():
 
 def Qvalue_iteration(t, r, gamma=0.5, n_iters=10):
     Q = np.zeros((N_STATES, N_ACTIONS))
-    for i in range(n_iters):
+    for _ in range(n_iters):
         # df = export_q_values(Q, path=f'./exported_q_values_{i}.csv')
         # print(df.head())
         for i, s in enumerate(States.as_list):  # for all states s
-            for i, a in enumerate(list(Actions)):  # for all actions a
+            for a in list(Actions):  # for all actions a
                 qs = 0
                 for j, s_ in enumerate(States.as_list):  # for all reachable states s'
+                    # tt = t(s, a, s_)
+                    # rr = r(s, a, s_)
+                    # if s_ == [1,0,0,0,1,0,1,0,0,1,1,0]:
+                    #     if s == [1,0,0,0,1,0,1,0,0,1,0,0]:
+                    #         tt = t(s, a, s_)
+                    #         rr = r(s, a, s_)
+                    #         qs += (tt * (rr + gamma * max(Q[j])))
+                    print(f'max = {max(Q[j])}')
                     qs += (t(s, a, s_) * (r(s, a, s_) + gamma * max(Q[j])))
                 Q[i][a] = qs
-    # plot_q_values(Q)
     return Q
 
 
@@ -411,28 +421,29 @@ if __name__ == '__main__':
     # util_make_terminal_states()
     hero_strategy = [
         # JACK
-        1, 0,  # pass first action with probability 1
-        1, 0,  # pass after p2 bet with probability 1
+        1, 0,  # pass/bet first action probabilities
+        1, 0,  # pass/call after p2 bet probailities
         # QUEEN
-        1, 0,  # pass first action with probability 1
-        1, 0,  # pass after p2 bet with probability 1
+        1, 0,  # pass/bet first action probabilities
+        1, 0,  # pass/call after p2 bet probailities
         # KING
-        0, 1,  # bet first action with probability 1
-        0, 1  # call after p2 bet with probability 1
+        0, 1,  # pass/bet first action probabilities
+        0, 1  # pass/call after p2 bet probailities
     ]
     villain_strategy = [
         # JACK
-        1, 0,  # pass after p1 checked with probability 1
-        1, 0,  # pass after p1 bet with probability 1
+        1, 0,  # pass/bet after p1 checked probabilities
+        1, 0,  # pass after p1 bet probabilities
         # QUEEN
-        0, 1,  # bet after p1 checked with probability 1
-        0, 1,  # call after p1 bet with probability 1
+        0, 1,  # pass/bet after p1 checked probabilities
+        0, 1,  # pass/call after p1 bet probabilities
         # KING
-        0, 1,  # bet after p1 checked with probability 1
-        0, 1  # call after p1 bet with probability 1
+        0, 1,  # bet after p1 checked probabilities
+        0, 1  # call after p1 bet probabilities
     ]
     t_fn = partial(t,
                    hero_strategy=hero_strategy,
                    villain_strategy=villain_strategy)
     Q = Qvalue_iteration(t_fn, r, 1, n_iters=10)
+    plot_q_values(Q)
     print(Q)
