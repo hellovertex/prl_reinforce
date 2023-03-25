@@ -72,17 +72,18 @@ check_fold = A.check_fold
 bet_call = A.bet_call
 # Rollouts where Hero holds Jack
 # villain will always bet when holding Q or K
-T[J][check_fold][S.J_P1_check_P2_bet_P1_PENDING] = 1
+T[J][check_fold][S.J_P1_check_P2_bet_P1_PENDING] = 1/3
+T[J][check_fold][S.J_P1_check_P2_check_show_Q] = 2/3
 # Hero bets his J and gets called to showdown by Q -- Hero loses
-T[J][bet_call][S.J_P1_bet_P2_call_show_Q] = .5
+T[J][bet_call][S.J_P1_bet_P2_call_show_Q] = 1/3
 # Hero bets his J and gets called to showdown by K -- Hero loses
-T[J][bet_call][S.J_P1_bet_P2_call_show_K] = .5
+T[J][bet_call][S.J_P1_bet_P2_call_show_K] = 2/3
 # Checks and then folds after villain bets his Q or K -- loses 1
 T[S.J_P1_check_P2_bet_P1_PENDING][check_fold][S.J_P1_check_P2_bet_P1_fold] = 1
 # Checks and then calls villain betting his Q -- Hero loses 2
-T[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_Q] = .5
+T[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_Q] = 1/3
 # Checks and then calls villain betting his K -- Hero loses 2
-T[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_K] = .5
+T[S.J_P1_check_P2_bet_P1_PENDING][bet_call][S.J_P1_check_P2_bet_P1_call_P2_show_K] = 2/3
 
 # Rollouts where hero holds Q
 # Villain holds K and bets -- Hero has to move

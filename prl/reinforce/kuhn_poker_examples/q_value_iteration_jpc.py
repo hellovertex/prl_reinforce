@@ -1,7 +1,10 @@
 # todo: design h1,h2,v1,v2 from qlearning
 #  plot q vals
+import random
+from copy import deepcopy
 from enum import IntEnum
 from functools import partial
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -13,20 +16,70 @@ class Card(IntEnum):
     K = 2
 
 
-class Actions(IntEnum):
+class Action(IntEnum):
     _pass = 0
     _bet = 1
 
 
 class Players(IntEnum):
-    one = 0
-    two = 1
+    hero = 0
+    villain = 1
 
 
 class Stage(IntEnum):
     one = 0
     two = 1
     three = 2
+
+
+def util_make_states():
+    _ = [0, 0, 0, 0, 0, 0]
+    l = [1, 0, 0, 0, 0, 0]
+    r = [0, 1, 0, 0, 0, 0]
+    ll = [1, 0, 1, 0, 0, 0]
+    lr = [1, 0, 0, 1, 0, 0]
+    lrl = [1, 0, 0, 1, 1, 0]
+    lrr = [1, 0, 0, 1, 0, 1]
+    rl = [0, 1, 1, 0, 0, 0]
+    rr = [0, 1, 0, 1, 0, 0]
+    cards = []
+    for i in range(len(Card)):
+        for j in range(len(Card)):
+            if i != j:
+                s = [0, 0, 0, 0, 0, 0]
+                s[i] = 1
+                s[j + 3] = 1
+                cards.append(s)
+
+    states = []
+    for s in cards:
+        for p in [_, l, r, ll, lr, lrl, lrr, rl, rr]:
+            states.append(s + p)
+    for i, state in enumerate(states):
+        print(f's_{i} = {state}')
+
+
+def util_make_terminal_states():
+    ll = [1, 0, 1, 0, 0, 0]
+    lrl = [1, 0, 0, 1, 1, 0]
+    lrr = [1, 0, 0, 1, 0, 1]
+    rl = [0, 1, 1, 0, 0, 0]
+    rr = [0, 1, 0, 1, 0, 0]
+    cards = []
+    for i in range(len(Card)):
+        for j in range(len(Card)):
+            if i != j:
+                s = [0, 0, 0, 0, 0, 0]
+                s[i] = 1
+                s[j + 3] = 1
+                cards.append(s)
+
+    states = []
+    for s in cards:
+        for p in [ll, lrl, lrr, rl, rr]:
+            states.append(s + p)
+    for i, state in enumerate(states):
+        print(f's_{i} = {state}')
 
 
 class State(IntEnum):
@@ -52,14 +105,14 @@ class States:
         0, 0,  # Player 1 1st. Action L=0, Action R=0
         0, 0,  # Player 2 Action L=0, Action R=0
         0, 0  # Player 1 2nd. Action L=0, Action R=0
-    ]
-    s_1 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0] # 0
-    s_2 = [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0] # 0
-    s_3 = [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0] # 0
-    s_4 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0] # -1, -2
+    ]  # 0
+    s_1 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0]  # -1
+    s_2 = [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0]  # -2
+    s_3 = [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0]  # 0
+    s_4 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0]  # -1, -2
     s_5 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0]
     s_6 = [1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1]
-    s_7 = [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0]
+    s_7 = [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0]  # 1
     s_8 = [1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0]
     s_9 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
     s_10 = [1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]
@@ -202,21 +255,23 @@ N_STATES = 54
 N_ACTIONS = 2
 
 
-class PlayerStrategy(IntEnum):
-    J_L0 = 0
-    J_R0 = 1
-    J_L1 = 2
-    J_R1 = 3
-
-    Q_L0 = 4
-    Q_R0 = 5
-    Q_L1 = 6
-    Q_R1 = 7
-
-    K_L0 = 8
-    K_R0 = 9
-    K_L1 = 10
-    K_R1 = 11
+#
+#
+# class PlayerStrategy(IntEnum):
+#     J_L0 = 0
+#     J_R0 = 1
+#     J_L1 = 2
+#     J_R1 = 3
+#
+#     Q_L0 = 4
+#     Q_R0 = 5
+#     Q_L1 = 6
+#     Q_R1 = 7
+#
+#     K_L0 = 8
+#     K_R0 = 9
+#     K_L1 = 10
+#     K_R1 = 11
 
 
 def cards_match(s, s_):
@@ -280,8 +335,9 @@ def apply_strategy(strategy, state):
 
 
 def apply_action(state, action):
-    next_state = np.zeros_like(state)
-    next_state[np.where(state)[0]] = 1
+    # next_state = np.zeros_like(state)
+    # next_state[np.where(state)[0]] = 1
+    next_state = deepcopy(state)
     first_move_is_done = state[S.action_0_R] + state[S.action_0_L]
     second_move_is_done = state[S.action_1_R] + state[S.action_1_L]
     third_move_is_done = state[S.action_2_R] + state[S.action_2_L]
@@ -306,7 +362,9 @@ def t(s, a, s_, hero_strategy, villain_strategy) -> float:
     next_state = apply_action(s, a)
     if not np.array_equal(next_state, s_):
         return 0
-
+    if next_state == [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0]:
+        a = 1
+        print('debug')
     # get player who has to act
     first_move_is_done = bool(s[S.action_0_R] + s[S.action_0_L])
     second_move_is_done = bool(s[S.action_1_R] + s[S.action_1_L])
@@ -344,99 +402,141 @@ def r(s, a, s_):
     return 1 if hero_wins else -1
 
 
-def util_make_states():
-    _ = [0, 0, 0, 0, 0, 0]
-    l = [1, 0, 0, 0, 0, 0]
-    r = [0, 1, 0, 0, 0, 0]
-    ll = [1, 0, 1, 0, 0, 0]
-    lr = [1, 0, 0, 1, 0, 0]
-    lrl = [1, 0, 0, 1, 1, 0]
-    lrr = [1, 0, 0, 1, 0, 1]
-    rl = [0, 1, 1, 0, 0, 0]
-    rr = [0, 1, 0, 1, 0, 0]
-    cards = []
-    for i in range(len(Card)):
-        for j in range(len(Card)):
-            if i != j:
-                s = [0, 0, 0, 0, 0, 0]
-                s[i] = 1
-                s[j + 3] = 1
-                cards.append(s)
-
-    states = []
-    for s in cards:
-        for p in [_, l, r, ll, lr, lrl, lrr, rl, rr]:
-            states.append(s + p)
-    for i, state in enumerate(states):
-        print(f's_{i} = {state}')
+def r2(s, a, s_):
+    if s == s_:
+        return 0
+    if s_ not in TERMINAL_STATES:
+        return 0
+    next_state = apply_action(s, a)
+    if not np.array_equal(next_state, s_):
+        return 0
+    if next_state == [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0]:
+        a = 1
+        print('debug')
+    card = np.where(s_[State.p0_has_J:State.p0_has_K + 1])[0][0]
+    hero_wins = np.where(s_[State.p1_has_J:State.p1_has_K + 1])[0][0] < card
+    if s_[State.action_0_R] and s_[State.action_1_R]:
+        return 2 if hero_wins else -2
+    if s_[State.action_0_L] and s_[State.action_1_R] and s_[State.action_2_R]:
+        return 2 if hero_wins else -2
+    return 1 if hero_wins else -1
 
 
-def util_make_terminal_states():
-    ll = [1, 0, 1, 0, 0, 0]
-    lrl = [1, 0, 0, 1, 1, 0]
-    lrr = [1, 0, 0, 1, 0, 1]
-    rl = [0, 1, 1, 0, 0, 0]
-    rr = [0, 1, 0, 1, 0, 0]
-    cards = []
-    for i in range(len(Card)):
-        for j in range(len(Card)):
-            if i != j:
-                s = [0, 0, 0, 0, 0, 0]
-                s[i] = 1
-                s[j + 3] = 1
-                cards.append(s)
+class KuhnPokerEnvironment:
+    """This class provides an interface for an agent to interact with
+    the underlying MDP of Kuhn Poker"""
 
-    states = []
-    for s in cards:
-        for p in [ll, lrl, lrr, rl, rr]:
-            states.append(s + p)
-    for i, state in enumerate(states):
-        print(f's_{i} = {state}')
+    def __init__(self):
+        self._player_cards: Dict[Players, Card] = dict()
+        self._action_history: List[Action] = list()
+        self._deck: List[Card] = [Card.J, Card.Q, Card.K]
+        self._state = None
 
+    def draw_card(self):
+        assert len(self._deck) > 0
+        card = random.choice(self._deck)
+        self._deck.pop(self._deck.index(card))
+        return card
 
-def Qvalue_iteration(t, r, gamma=0.5, n_iters=10):
-    Q = np.zeros((N_STATES, N_ACTIONS))
-    for _ in range(n_iters):
-        # df = export_q_values(Q, path=f'./exported_q_values_{i}.csv')
-        # print(df.head())
-        for i, s in enumerate(States.as_list):  # for all states s
-            for a in list(Actions):  # for all actions a
-                qs = 0
-                for j, s_ in enumerate(States.as_list):  # for all reachable states s'
-                    # tt = t(s, a, s_)
-                    # rr = r(s, a, s_)
-                    # if s_ == [1,0,0,0,1,0,1,0,0,1,1,0]:
-                    #     if s == [1,0,0,0,1,0,1,0,0,1,0,0]:
-                    #         tt = t(s, a, s_)
-                    #         rr = r(s, a, s_)
-                    #         qs += (tt * (rr + gamma * max(Q[j])))
-                    print(f'max = {max(Q[j])}')
-                    qs += (t(s, a, s_) * (r(s, a, s_) + gamma * max(Q[j])))
-                Q[i][a] = qs
-    return Q
+    def vectorize(self):
+        # only called from reset
+        # one hot encodings
+        cards = [0 for _ in range(len(Card) * len(Players))]
+        cards[self._player_cards[Players.hero]] = 1
+        cards[len(Card) + self._player_cards[Players.villain]] = 1
+
+        actions = [0 for _ in range(len(Action) * len(Stage))]
+        for i, action in enumerate(self._action_history):
+            actions[i * len(Stage) + action.value] = 1
+        # current player is implicitly determined from action
+        # current player might also be explicitly encoded but
+        # its just overhead to keep track of
+        return cards + actions
+
+    def reset(self):
+        self._deck = [Card.J, Card.Q, Card.K]
+        self._player_cards[Players.hero] = self.draw_card()
+        self._player_cards[Players.villain] = self.draw_card()
+        self._action_history = list()
+        self.state = self.vectorize()
+        self.next_player = Players.hero
+        return self.state, 0, False, {}
+
+    def hero_wins(self, s_):
+        card = np.where(s_[State.p0_has_J:State.p0_has_K + 1])[0][0]
+        hero_wins = np.where(s_[State.p1_has_J:State.p1_has_K + 1])[0][0] < card
+        return hero_wins
+
+    def print_state(self, s):
+        card0 = np.where(s[State.p0_has_J:State.p0_has_K + 1])[0][0]
+        card1 = np.where(s[State.p1_has_J:State.p1_has_K + 1])[0][0]
+        actions = []
+        for i in range(State.action_0_L, State.action_2_R, 2):
+            action = ''
+            if s[i]:
+                action = 'Pass'
+            if s[i+1]:
+                action = 'Bet'
+            actions.append(action)
+        done = s in TERMINAL_STATES
+        res = f'Hero card = {card0}. Villain Card = {card1}.\n' \
+              f'Actions = {actions}. Done={done}'
+        print(res)
+
+    def step(self, action: int):
+        """
+        :param action: Integer representation of the action to execute in the environment.
+        :return: state, reward, done, info
+        """
+        state = self.state
+        next_state = deepcopy(self.state)
+        first_move_is_done = state[S.action_0_R] + state[S.action_0_L]
+        second_move_is_done = state[S.action_1_R] + state[S.action_1_L]
+        third_move_is_done = state[S.action_2_R] + state[S.action_2_L]
+        if bool(third_move_is_done):
+            return np.zeros_like(state)
+        if not first_move_is_done:
+            next_state[S.action_0_L + action] = 1
+        elif not second_move_is_done:
+            next_state[S.action_1_L + action] = 1
+        elif not third_move_is_done:
+            next_state[S.action_2_L + action] = 1
+        else:
+            raise ValueError(f"Edge case encountered when trying to step "
+                             f"state={state} with action={action}")
+        self.state = next_state
+        done = True if self.state in TERMINAL_STATES else False
+        reward = 0
+        if done:
+            reward = 1 if action == 0 else 2
+            if not self.hero_wins(self.state):
+                reward *= -1
+        self.next_player = (self.next_player + 1) % 2
+        return next_state, reward, done, {}
 
 
 if __name__ == '__main__':
     # util_make_states()
     # util_make_terminal_states()
+    alpha = 1/3
     hero_strategy = [
         # JACK
-        1, 0,  # pass/bet first action probabilities
+        1-alpha, alpha,  # pass/bet first action probabilities
         1, 0,  # pass/call after p2 bet probailities
         # QUEEN
         1, 0,  # pass/bet first action probabilities
-        1, 0,  # pass/call after p2 bet probailities
+        2/3-alpha, alpha+1/3,  # pass/call after p2 bet probailities
         # KING
-        0, 1,  # pass/bet first action probabilities
+        1-3*alpha, 3*alpha,  # pass/bet first action probabilities
         0, 1  # pass/call after p2 bet probailities
     ]
     villain_strategy = [
         # JACK
-        1, 0,  # pass/bet after p1 checked probabilities
-        1, 0,  # pass after p1 bet probabilities
+        2/3, 1/3,  # pass/bet after p1 checked probabilities
+        0, 1,  # pass after p1 bet probabilities
         # QUEEN
         0, 1,  # pass/bet after p1 checked probabilities
-        0, 1,  # pass/call after p1 bet probabilities
+        2/3, 1/3,  # pass/call after p1 bet probabilities
         # KING
         0, 1,  # bet after p1 checked probabilities
         0, 1  # call after p1 bet probabilities
@@ -444,6 +544,22 @@ if __name__ == '__main__':
     t_fn = partial(t,
                    hero_strategy=hero_strategy,
                    villain_strategy=villain_strategy)
-    Q = Qvalue_iteration(t_fn, r, 1, n_iters=10)
-    plot_q_values(Q)
-    print(Q)
+    n_epochs = 10000
+    epoch = 0
+    env = KuhnPokerEnvironment()
+    obs, rew, done, info = env.reset()
+    rews = []
+    while epoch < n_epochs:
+        if done:
+            rews.append(rew)
+            obs, rew, done, info = env.reset()
+            epoch += 1
+        strategy = hero_strategy if env.next_player == Players.hero else villain_strategy
+        action = apply_strategy(strategy, obs)
+        obs, rew, done, info = env.step(np.random.choice([0, 1], size=1, p=action)[0])
+        if not done:
+            assert rew == 0
+        # env.print_state(obs)
+        # if done:
+        #     print(f'rew={rew}')
+    print(f'Mean reward after {epoch} epochs: {np.mean(rews)}')
